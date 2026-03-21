@@ -428,11 +428,11 @@ const char* game_get_state_json() {
     offset += sprintf(buffer + offset, "\"ai1CardCount\":%d,", players[1].cardCount);
     offset += sprintf(buffer + offset, "\"ai2CardCount\":%d,", players[2].cardCount);
 
-    // 上一手牌型和具体牌面
     offset += sprintf(buffer + offset, "\"lastPlayType\":%d,", lastPlay.type);
-    offset += sprintf(buffer + offset, "\"lastPlayedText\":\"%s\"", lastPlayedText);
+    offset += sprintf(buffer + offset, "\"lastPlayedText\":\"%s\",", lastPlayedText);
     offset += sprintf(buffer + offset, "\"landlordIndex\":%d", landlordIndex);
-    offset += sprintf(buffer + offset, "}");    
+
+    offset += sprintf(buffer + offset, "}");  
 
     return buffer;
 }
@@ -600,22 +600,6 @@ void game_init() {
 void game_auto_run() {
     while (!gameOver && currentPlayer != 0) {
         game_ai_step();
-    }
-}
-
-void clearLastPlayedText() {
-    lastPlayedText[0] = '\0';
-}
-
-
-void buildPlayedTextFromSelection(const Player* player, int selected[], int count) {
-    clearLastPlayedText();
-
-    for (int i = 0; i < count; i++) {
-        if (i > 0) {
-            strcat(lastPlayedText, " ");
-        }
-        strcat(lastPlayedText, player->hand[selected[i]].name);
     }
 }
 
