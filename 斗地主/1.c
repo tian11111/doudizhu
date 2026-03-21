@@ -1,17 +1,21 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
+
 // 出牌类型
 typedef enum {
-    PASS = 0,     // 过牌
-    SINGLE,       // 单张
-    PAIR,         // 对子
-    STRAIGHT,     // 顺子
-    BOMB,         // 炸弹（四张相同）
-    ROCKET        // 王炸（大小王）
+    PASS = 0,         // 过牌
+    SINGLE,           // 单张
+    PAIR,             // 对子
+    TRIPLE,           // 三张
+    TRIPLE_ONE,       // 三带一
+    TRIPLE_PAIR,      // 三带二
+    STRAIGHT,         // 顺子
+    BOMB,             // 炸弹（四张相同）
+    ROCKET            // 王炸（大小王）
 } PlayType;
 
 // 表示一次出牌行为
@@ -19,7 +23,7 @@ typedef struct {
     PlayType type;
     int point;            // 主点数（如对子是5，顺子是起始点）
     int length;           // 长度（顺子用）
-    int cardIndices[17];  // 选中的手牌索引
+    int cardIndices[20];  // 选中的手牌索引
     int cardCount;        // 实际出几张牌
 } Play;
 
@@ -49,7 +53,7 @@ typedef struct {
 
 typedef struct {
     char name[20];              // 玩家名字
-    Card hand[17];              // 手牌数组
+    Card hand[20];              // 手牌数组
     int cardCount;              // 当前手中牌的数量
     bool isLandlord;            // 是否是地主
 } Player;
@@ -59,6 +63,32 @@ typedef struct {
     Card deck[54];
     int top;
 } Deck;
+
+Deck gameDeck;
+Player players[3];
+Play lastPlay;
+int lastPlayer;
+int passCount;
+int gameRound;
+int currentPlayer;
+bool gameOver;
+char lastPlayedText[256];
+int landlordIndex = -1;
+
+void clearLastPlayedText();
+void buildPlayedTextFromSelection(const Player* player, int selected[], int count);
+
+void clearLastPlayedText() {
+    lastPlayedText[0] = '\0';
+}
+
+void buildPlayedTextFromSelection(const Player* player, int selected[], int count) {
+    clearLastPlayedText();
+    for (int i = 0; i < count; i++) {
+        if (i > 0) strcat(lastPlayedText, " ");
+        strcat(lastPlayedText, player->hand[selected[i]].name);
+    }
+}
 
 // 初始化牌堆
 void initializeDeck(Deck* deck) {
@@ -158,6 +188,7 @@ int getPlayerChoice(const Player* player, int lastPoint) {
     }
 }
 
+
 Play analyzePlay(const Player* player, int selected[], int selectedCount) {
     Play play = { 0 };
     play.cardCount = selectedCount;
@@ -168,7 +199,7 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
     }
 
     // 提取点数并排序
-    int points[17];
+    int points[20];
     for (int i = 0; i < selectedCount; i++) {
         points[i] = player->hand[selected[i]].point;
     }
@@ -213,7 +244,43 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
         play.length = 1;
         return play;
     }
+        // 三张
+    if (selectedCount == 3 && points[0] == points[2]) {
+        play.type = TRIPLE;
+        play.point = points[0];
+        play.length = 3;
+        return play;
+    }
 
+    // 三带一
+    if (selectedCount == 4) {
+    // 必须是三张 + 单张，不能是四张一样
+    if ((points[0] == points[2] && points[2] != points[3]) ||
+        (points[1] == points[3] && points[0] != points[1])) {
+        play.type = TRIPLE_ONE;
+        play.point = (points[0] == points[2]) ? points[0] : points[1];
+        play.length = 4;
+        return play;
+        }
+    }
+
+    // 三带二
+    if (selectedCount == 5) {
+        // 形如 AAA+BB
+        if (points[0] == points[2] && points[3] == points[4]) {
+            play.type = TRIPLE_PAIR;
+            play.point = points[0];
+            play.length = 5;
+            return play;
+        }
+        // 形如 AA+BBB
+        if (points[0] == points[1] && points[2] == points[4]) {
+            play.type = TRIPLE_PAIR;
+            play.point = points[2];
+            play.length = 5;
+            return play;
+        }
+    }
     // 炸弹（四张相同）
     if (selectedCount == 4 && points[0] == points[3]) {
         play.type = BOMB;
@@ -288,26 +355,219 @@ bool canPlayBeat(const Play* current, const Play* last) {
     return false;
 }
 
-void initializeDeck(Deck* deck);
-void shuffleDeck(Deck* deck);
-void dealCards(Deck* deck, Player players[]);
-void printPlayerHand(const Player* player);
-void sortHandByPoint(Player* player);
-const char* getCardName(const Card* card);
-int getPlayerChoice(const Player* player, int lastPoint);
-Play analyzePlay(const Player* player, int selected[], int selectedCount);
-bool canPlayBeat(const Play* current, const Play* last);
+int game_play(int selected[], int count) {
+    Play currentPlay = analyzePlay(&players[0], selected, count);
 
-int main() {
+    if (currentPlay.type == PASS) return 0;
+    if (!canPlayBeat(&currentPlay, &lastPlay)) return 0;
+
+    buildPlayedTextFromSelection(&players[0], selected, count);
+    
+    // 删除手牌
+    for (int k = count - 1; k >= 0; k--) {
+        int idx = selected[k];
+        for (int j = idx; j < players[0].cardCount - 1; j++) {
+            players[0].hand[j] = players[0].hand[j + 1];
+        }
+        players[0].cardCount--;
+    }
+
+    lastPlay = currentPlay;
+    lastPlayer = 0;
+    passCount = 0;
+    currentPlayer = 1;
+
+    if (players[0].cardCount == 0) {
+        gameOver = true;
+    }
+    gameRound++;
+    return 1;
+}
+
+int game_pass() {
+    if (lastPlay.type == PASS) return 0;
+
+    strcpy(lastPlayedText, "过牌");
+
+    passCount++;
+    lastPlayer = 0;
+    currentPlayer = 1;
+
+    if (passCount >= 2) {
+        lastPlay.type = PASS;
+        lastPlayer = -1;
+        passCount = 0;
+    }
+    gameRound++;
+    return 1;
+}
+
+char buffer[4096];
+
+const char* game_get_state_json() {
+    int offset = 0;
+
+    offset += sprintf(buffer + offset, "{");
+
+    // 我的手牌
+    offset += sprintf(buffer + offset, "\"hand\":[");
+    for (int i = 0; i < players[0].cardCount; i++) {
+        if (i > 0) offset += sprintf(buffer + offset, ",");
+        offset += sprintf(buffer + offset, "\"%s\"", players[0].hand[i].name);
+    }
+    offset += sprintf(buffer + offset, "],");
+
+    // 基本状态
+    offset += sprintf(buffer + offset, "\"currentPlayer\":%d,", currentPlayer);
+    offset += sprintf(buffer + offset, "\"gameRound\":%d,", gameRound);
+    offset += sprintf(buffer + offset, "\"lastPlayer\":%d,", lastPlayer);
+    offset += sprintf(buffer + offset, "\"gameOver\":%s,", gameOver ? "true" : "false");
+
+    // 各玩家剩余牌数
+    offset += sprintf(buffer + offset, "\"myCardCount\":%d,", players[0].cardCount);
+    offset += sprintf(buffer + offset, "\"ai1CardCount\":%d,", players[1].cardCount);
+    offset += sprintf(buffer + offset, "\"ai2CardCount\":%d,", players[2].cardCount);
+
+    // 上一手牌型和具体牌面
+    offset += sprintf(buffer + offset, "\"lastPlayType\":%d,", lastPlay.type);
+    offset += sprintf(buffer + offset, "\"lastPlayedText\":\"%s\"", lastPlayedText);
+    offset += sprintf(buffer + offset, "\"landlordIndex\":%d", landlordIndex);
+    offset += sprintf(buffer + offset, "}");    
+
+    return buffer;
+}
+
+int game_ai_step() {
+    int i = currentPlayer;
+    if (i == 0) return 0;   // 轮到人类时，AI不动
+    if (gameOver) return 0;
+
+    bool found = false;
+    Play currentPlay = { 0 };
+    int selected[20];
+    int selectedCount = 0;
+    bool isPass = false;
+
+    // 简单 AI：只找最小合法单张
+    if (lastPlay.type == PASS || lastPlay.type == SINGLE) {
+        for (int idx = 0; idx < players[i].cardCount; idx++) {
+            if (lastPlay.type == PASS || players[i].hand[idx].point > lastPlay.point) {
+                selected[0] = idx;
+                selectedCount = 1;
+                currentPlay = analyzePlay(&players[i], selected, 1);
+                if (currentPlay.type == SINGLE) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+        // AI 出对子
+    if (!found && lastPlay.type == PAIR) {
+        for (int idx = 0; idx < players[i].cardCount - 1; idx++) {
+            if (players[i].hand[idx].point == players[i].hand[idx + 1].point &&
+                players[i].hand[idx].point > lastPlay.point) {
+                selected[0] = idx;
+                selected[1] = idx + 1;
+                selectedCount = 2;
+                currentPlay = analyzePlay(&players[i], selected, 2);
+                if (currentPlay.type == PAIR) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    // AI 出三张
+    if (!found && lastPlay.type == TRIPLE) {
+        for (int idx = 0; idx < players[i].cardCount - 2; idx++) {
+            if (players[i].hand[idx].point == players[i].hand[idx + 2].point &&
+                players[i].hand[idx].point > lastPlay.point) {
+                selected[0] = idx;
+                selected[1] = idx + 1;
+                selected[2] = idx + 2;
+                selectedCount = 3;
+                currentPlay = analyzePlay(&players[i], selected, 3);
+                if (currentPlay.type == TRIPLE) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+    // AI 出三带一
+    if (!found && lastPlay.type == TRIPLE_ONE) {
+        for (int idx = 0; idx < players[i].cardCount - 2; idx++) {
+             if (players[i].hand[idx].point == players[i].hand[idx + 2].point &&players[i].hand[idx].point > lastPlay.point) {
+
+                // 找一个单张
+                for (int k = 0; k < players[i].cardCount; k++) {
+                    if (k != idx && k != idx+1 && k != idx+2) {
+                        selected[0] = idx;
+                        selected[1] = idx + 1;
+                        selected[2] = idx + 2;
+                        selected[3] = k;
+                        selectedCount = 4;
+
+                        currentPlay = analyzePlay(&players[i], selected, 4);
+                        if (currentPlay.type == TRIPLE_ONE) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (found) break;
+        }
+    }   
+    if (!found) {
+        isPass = true;
+    }
+
+    if (!isPass) {
+        buildPlayedTextFromSelection(&players[i], selected, selectedCount);
+
+        lastPlay = currentPlay;
+        lastPlayer = i;
+        passCount = 0;
+
+        for (int k = selectedCount - 1; k >= 0; k--) {
+            int idx = selected[k];
+            for (int j = idx; j < players[i].cardCount - 1; j++) {
+                players[i].hand[j] = players[i].hand[j + 1];
+            }
+            players[i].cardCount--;
+        }
+
+        if (players[i].cardCount == 0) {
+            gameOver = true;
+        }
+    }
+else {
+    strcpy(lastPlayedText, "过牌");
+
+    passCount++;
+
+    if (passCount >= 2) {
+        lastPlay.type = PASS;
+        lastPlayer = -1;
+        passCount = 0;
+    }
+}
+
+    // 推进到下一个玩家
+    currentPlayer = (i + 1) % 3;
+    gameRound++;
+    return 1;
+}
+void game_init() {
     srand((unsigned)time(NULL));
 
-    // 初始化
-    Deck gameDeck = { 0 };
     gameDeck.top = 0;
     initializeDeck(&gameDeck);
     shuffleDeck(&gameDeck);
 
-    Player players[3] = { 0 };
     strcpy(players[0].name, "我");
     strcpy(players[1].name, "电脑1");
     strcpy(players[2].name, "电脑2");
@@ -319,177 +579,48 @@ int main() {
 
     dealCards(&gameDeck, players);
 
-    // 随机选地主
     int landlordIdx = rand() % 3;
+    landlordIndex = landlordIdx;
     players[landlordIdx].isLandlord = true;
     printf("\n【地主】: %s\n", players[landlordIdx].name);
 
-    // 所有玩家排序手牌
     for (int i = 0; i < 3; i++) {
         sortHandByPoint(&players[i]);
     }
 
-    // 游戏状态
-    int passCount = 0;
-    int lastPlayer = -1;  // 上一个出牌的人
-    Play lastPlay = { 0 };
+    passCount = 0;
+    lastPlayer = -1;
     lastPlay.type = PASS;
+    gameRound = 1;
+    currentPlayer = landlordIdx;
+    gameOver = false;
+    clearLastPlayedText();
+}
 
-    int round = 1;
-
-    while (1) {
-        bool hasWinner = false;
-        for (int i = 0; i < 3; i++) {
-            if (players[i].cardCount == 0) {
-                printf("\n 游戏结束！%s 赢了！\n", players[i].name);
-                if (players[i].isLandlord) {
-                    printf("【地主胜利】\n");
-                }
-                else {
-                    printf("【农民胜利】\n");
-                }
-                hasWinner = true;
-                break;
-            }
-        }
-        if (hasWinner) break;
-
-        printf("\n==================== 回合 %d ====================\n", round);
-        printPlayerHand(&players[0]);
-
-        bool playedThisRound = false;
-
-        for (int i = 0; i < 3; i++) {
-            if (players[i].cardCount == 0) continue;
-
-            // 判断是否轮到当前玩家
-            if (lastPlayer != -1 && i != (lastPlayer + 1) % 3) {
-                continue;
-            }
-
-            printf("\n轮到 %s 出牌\n", players[i].name);
-
-            // 重置本轮出牌标志
-            playedThisRound = false;
-
-            Play currentPlay = { 0 };
-            bool isPass = false;
-            int selected[17];
-            int selectedCount = 0;
-
-            // === 人类玩家出牌 ===
-            if (i == 0) {
-                while (1) {
-                    printf("输入要出的牌编号（空格分隔），-1 表示过牌: ");
-                    int input;
-                    selectedCount = 0;
-                    while (scanf("%d", &input) == 1) {
-                        if (input == -1) break;
-                        if (input >= 0 && input < players[i].cardCount) {
-                            selected[selectedCount++] = input;
-                        }
-                        else {
-                            printf("无效编号 %d，忽略。\n", input);
-                        }
-                        int c = getchar();
-                        if (c == '\n' || c == EOF) break;
-                    }
-
-                    if (selectedCount == 0) {
-                        printf("%s 过牌。\n", players[i].name);
-                        isPass = true;
-                        break;
-                    }
-
-                    currentPlay = analyzePlay(&players[i], selected, selectedCount);
-                    if (currentPlay.type == PASS) {
-                        printf("❌ 牌型不合法！请重新选择。\n");
-                        continue;
-                    }
-
-                    if (!canPlayBeat(&currentPlay, &lastPlay)) {
-                        printf("❌ 你出的牌打不过上家！请重新选择。\n");
-                        continue;
-                    }
-
-                    // 合法且能打过
-                    break;
-                }
-            }
-            // === 电脑玩家 AI 出牌（简化版：能出就出最小合法牌）===
-            else {
-                // 简单 AI：遍历所有牌，找第一个能打过上家的合法牌型
-                bool found = false;
-
-                // 先尝试单张（最小点数）
-                if (lastPlay.type == PASS || lastPlay.type == SINGLE) {
-                    for (int idx = 0; idx < players[i].cardCount; idx++) {
-                        if (lastPlay.type == PASS || players[i].hand[idx].point > lastPlay.point) {
-                            selected[0] = idx;
-                            selectedCount = 1;
-                            currentPlay = analyzePlay(&players[i], selected, 1);
-                            if (currentPlay.type == SINGLE) {
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-
-                if (!found) {
-                    printf("%s 过牌。\n", players[i].name);
-                    isPass = true;
-                }
-                else {
-                    printf("%s 打出了: ", players[i].name);
-                    for (int k = 0; k < selectedCount; k++) {
-                        int idx = selected[k];
-                        printf("%s ", players[i].hand[idx].name);
-                    }
-                    printf("\n");
-                }
-            }
-
-            // === 处理出牌结果 ===
-            if (!isPass) {
-                // 更新 lastPlay
-                lastPlay = currentPlay;
-                lastPlayer = i;
-                passCount = 0;  // 重置过牌计数
-
-                // 从手牌中移除
-                for (int k = selectedCount - 1; k >= 0; k--) {
-                    int idx = selected[k];
-                    for (int j = idx; j < players[i].cardCount - 1; j++) {
-                        players[i].hand[j] = players[i].hand[j + 1];
-                    }
-                    players[i].cardCount--;
-                }
-
-                playedThisRound = true;
-            }
-            else {
-                passCount++;
-                // 三家都过？重置出牌权
-                if (passCount >= 2) {
-                    printf("【三家都过，新一轮开始】\n");
-                    lastPlay.type = PASS;
-                    lastPlayer = -1;
-                    passCount = 0;
-                }
-                lastPlayer = i;  // 更新轮到谁过牌
-            }
-
-            if (playedThisRound) break;  // 有人出牌，本轮结束
-        }
-
-        round++;
-        if (round > 50) {
-            printf("游戏超时，强制结束。\n");
-            break;
-        }
+void game_auto_run() {
+    while (!gameOver && currentPlayer != 0) {
+        game_ai_step();
     }
+}
 
+void clearLastPlayedText() {
+    lastPlayedText[0] = '\0';
+}
+
+
+void buildPlayedTextFromSelection(const Player* player, int selected[], int count) {
+    clearLastPlayedText();
+
+    for (int i = 0; i < count; i++) {
+        if (i > 0) {
+            strcat(lastPlayedText, " ");
+        }
+        strcat(lastPlayedText, player->hand[selected[i]].name);
+    }
+}
+
+
+int main() {
+    srand((unsigned)time(NULL));
     return 0;
 }

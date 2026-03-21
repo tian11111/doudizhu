@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>斗地主</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Microsoft YaHei", sans-serif;
+      background: #1d5d3a;
+    }
+
+    .table {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background:
+        radial-gradient(circle at center, #2f8c56 0%, #226c42 45%, #184d2f 100%);
+    }
+
+    .title {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ffe7a6;
+      font-size: 30px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      text-shadow: 0 3px 10px rgba(0,0,0,.35);
+      z-index: 10;
+    }
+
+    .player {
+      position: absolute;
+      width: 150px;
+      color: #fff;
+      text-align: center;
+      z-index: 6;
+    }
+
+    .player-box {
+      position: relative;
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2);
+      backdrop-filter: blur(4px);
+    }
+
+    .player-name {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .player-count {
+      font-size: 14px;
+      color: #e8fff2;
+    }
+
+    .turn {
+      margin-top: 8px;
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #facc15;
+      color: #5e3c00;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .landlord {
+      position: absolute;
+      top: -10px;
+      right: -6px;
+      background: #dc2626;
+      color: #fff;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0,0,0,.22);
+    }
+
+    .ai-left { left: 24px; top: 100px; }
+    .ai-right { right: 24px; top: 100px; }
+    .me { left: 50%; bottom: 170px; transform: translateX(-50%); }
+
+    .ai-back-area {
+      margin-top: 12px;
+      height: 92px;
+      position: relative;
+    }
+
+    .back-card {
+      position: absolute;
+      width: 48px;
+      height: 68px;
+      border-radius: 10px;
+      border: 1px solid #d6d6d6;
+      background:
+        linear-gradient(135deg, #c1121f 0%, #ef4444 50%, #991b1b 100%);
+      box-shadow: 0 6px 12px rgba(0,0,0,.22);
+    }
+
+    .back-card::after {
+      content: "♠";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,.9);
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .center-zone {
+      position: absolute;
+      left: 50%;
+      top: 46%;
+      transform: translate(-50%, -50%);
+      width: 760px;
+      max-width: 92vw;
+      z-index: 5;
+    }
+
+    .desk-info {
+      text-align: center;
+      color: #f8fafc;
+      margin-bottom: 12px;
+      font-size: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .play-stage {
+      position: relative;
+      height: 220px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 22px;
+      box-shadow: 0 10px 26px rgba(0,0,0,.18);
+      overflow: hidden;
+    }
+
+    .last-label {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #d1fae5;
+      font-size: 15px;
+    }
+
+    .played-group {
+      position: absolute;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      min-height: 84px;
+      transition: all .25s ease;
+    }
+
+    .played-left  { left: 60px; top: 70px; }
+    .played-right { right: 60px; top: 70px; }
+    .played-mid   { left: 50%; top: 100px; transform: translateX(-50%); }
+
+    .played-title {
+      position: absolute;
+      top: -22px;
+      width: 100%;
+      text-align: center;
+      color: #fde68a;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .show-card {
+      width: 58px;
+      height: 82px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      background: linear-gradient(180deg, #fff, #f3f4f6);
+      color: #111827;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 14px rgba(0,0,0,.22);
+      animation: popIn .22s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(16px) scale(.9); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .play-type {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #dbeafe;
+      font-size: 14px;
+    }
+
+    .my-hand-wrap {
+      position: absolute;
+      left: 50%;
+      bottom: 72px;
+      transform: translateX(-50%);
+      width: calc(100vw - 80px);
+      max-width: 1100px;
+      height: 150px;
+      z-index: 7;
+    }
+
+    .hand-area {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .my-card {
+      position: absolute;
+      width: 60px;
+      height: 86px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #ffffff, #f3f4f6);
+      border: 1px solid #d1d5db;
+      box-shadow: 0 8px 14px rgba(0,0,0,.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: bold;
+      color: #111827;
+      cursor: pointer;
+      user-select: none;
+      transition: top .15s ease, transform .15s ease, box-shadow .15s ease;
+    }
+
+    .my-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .my-card.selected {
+      top: 6px !important;
+      border: 2px solid #3b82f6;
+      background: linear-gradient(180deg, #eff6ff, #dbeafe);
+      box-shadow: 0 12px 18px rgba(0,0,0,.28);
+    }
+
+    .actions {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      z-index: 9;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 24px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #fff;
+      background: #2563eb;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,.2);
+    }
+
+    button.success { background: #16a34a; }
+    button.secondary { background: #6b7280; }
+
+    .log {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      width: 300px;
+      max-height: 180px;
+      overflow-y: auto;
+      background: rgba(0,0,0,.3);
+      color: #eef2ff;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.55;
+      border: 1px solid rgba(255,255,255,.12);
+      z-index: 9;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="table">
+    <div class="title">斗地主</div>
+
+    <div class="player ai-left">
+      <div class="player-box">
+        <div id="landlord1"></div>
+        <div class="player-name">电脑1</div>
+        <div class="player-count" id="ai1Count">剩余 17 张</div>
+        <div id="ai1Turn"></div>
+        <div class="ai-back-area" id="ai1Backs"></div>
+      </div>
+    </div>
+
+    <div class="player ai-right">
+      <div class="player-box">
+        <div id="landlord2"></div>
+        <div class="player-name">电脑2</div>
+        <div class="player-count" id="ai2Count">剩余 17 张</div>
+        <div id="ai2Turn"></div>
+        <div class="ai-back-area" id="ai2Backs"></div>
+      </div>
+    </div>
+
+    <div class="player me">
+      <div class="player-box">
+        <div id="landlord0"></div>
+        <div class="player-name">你</div>
+        <div class="player-count" id="myCount">剩余 17 张</div>
+        <div id="meTurn"></div>
+      </div>
+    </div>
+
+    <div class="center-zone">
+      <div class="desk-info">
+        <span id="roundText">回合：--</span>
+        <span id="turnText">当前轮到：--</span>
+        <span id="stateText">游戏状态：进行中</span>
+      </div>
+
+      <div class="play-stage">
+        <div class="last-label">出牌区</div>
+
+        <div class="played-group played-left" id="playedLeft">
+          <div class="played-title">电脑1</div>
+        </div>
+
+        <div class="played-group played-right" id="playedRight">
+          <div class="played-title">电脑2</div>
+        </div>
+
+        <div class="played-group played-mid" id="playedMid">
+          <div class="played-title">你</div>
+        </div>
+
+        <div class="play-type" id="playTypeText">牌型：--</div>
+      </div>
+    </div>
+
+    <div class="my-hand-wrap">
+      <div class="hand-area" id="handArea"></div>
+    </div>
+
+    <div class="actions">
+      <button class="success" id="btnStart">开始游戏</button>
+      <button id="btnPlay">出牌</button>
+      <button class="secondary" id="btnPass">过牌</button>
+      <button class="secondary" id="btnRefresh">刷新</button>
+    </div>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <script src="./game.js"></script>
+  <script>
+    let wasmModule = null;
+    let gameState = null;
+    let prevState = null;
+    let selectedIndices = new Set();
+
+    const handArea = document.getElementById("handArea");
+    const logBox = document.getElementById("log");
+
+    function appendLog(text) {
+      const time = new Date().toLocaleTimeString();
+      logBox.textContent += `[${time}] ${text}\n`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function playerName(index) {
+      return index === 0 ? "你" : index === 1 ? "电脑1" : index === 2 ? "电脑2" : "无";
+    }
+
+    function playTypeName(type) {
+      const map = {
+        0: "过牌",
+        1: "单张",
+        2: "对子",
+        3: "三张",
+        4: "三带一",
+        5: "三带二",
+        6: "顺子",
+        7: "炸弹",
+        8: "王炸"
+      };
+      return map[type] || "未知";
+    }
+
+    function getState() {
+      const ptr = wasmModule._game_get_state_json();
+      return JSON.parse(wasmModule.UTF8ToString(ptr));
+    }
+
+    function updateState() {
+      prevState = gameState;
+      gameState = getState();
+      return gameState;
+    }
+
+    function setTurn(id, active) {
+      document.getElementById(id).innerHTML = active ? '<span class="turn">出牌中</span>' : '';
+    }
+
+    function setLandlord(index) {
+      for (let i = 0; i < 3; i++) {
+        document.getElementById(`landlord${i}`).innerHTML = i === index
+          ? '<span class="landlord">地主</span>'
+          : '';
+      }
+    }
+
+    function renderBackCards(containerId, count) {
+      const box = document.getElementById(containerId);
+      box.innerHTML = "";
+      const showCount = Math.min(count, 10);
+      for (let i = 0; i < showCount; i++) {
+        const div = document.createElement("div");
+        div.className = "back-card";
+        div.style.left = (i * 8) + "px";
+        div.style.top = (i % 2) + "px";
+        box.appendChild(div);
+      }
+    }
+
+    function splitCards(text) {
+      if (!text || text === "过牌") return [];
+      return text.trim().split(/\s+/);
+    }
+
+    function renderPlayedArea(playerIndex, text) {
+      const groups = {
+      0: document.getElementById("playedMid"),
+      1: document.getElementById("playedLeft"),
+      2: document.getElementById("playedRight")
+    };
+
+    if (playerIndex < 0 || groups[playerIndex] == null) return;
+
+    const target = groups[playerIndex];
+    const title = target.querySelector(".played-title");
+
+    // 先清空这个玩家自己的出牌区
+    target.innerHTML = "";
+    target.appendChild(title);
+
+    // 如果是过牌，就清空后直接返回
+    if (!text || text === "过牌") {
+      return;
+    }
+
+    const cards = splitCards(text);
+    if (!cards.length) return;
+
+    cards.forEach(card => {
+      const div = document.createElement("div");
+      div.className = "show-card";
+      div.textContent = card;
+      target.appendChild(div);
+    });
+  }
+
+    function renderStatus(state) {
+      document.getElementById("myCount").textContent = `剩余 ${state.myCardCount} 张`;
+      document.getElementById("ai1Count").textContent = `剩余 ${state.ai1CardCount} 张`;
+      document.getElementById("ai2Count").textContent = `剩余 ${state.ai2CardCount} 张`;
+
+      setTurn("meTurn", state.currentPlayer === 0);
+      setTurn("ai1Turn", state.currentPlayer === 1);
+      setTurn("ai2Turn", state.currentPlayer === 2);
+
+      setLandlord(state.landlordIndex);
+
+      renderBackCards("ai1Backs", state.ai1CardCount);
+      renderBackCards("ai2Backs", state.ai2CardCount);
+
+      document.getElementById("roundText").textContent = `回合：${state.gameRound}`;
+      document.getElementById("turnText").textContent = `当前轮到：${playerName(state.currentPlayer)}`;
+      document.getElementById("stateText").textContent = `游戏状态：${state.gameOver ? "已结束" : "进行中"}`;
+      document.getElementById("playTypeText").textContent = `牌型：${playTypeName(state.lastPlayType)}`;
+
+      renderPlayedArea(state.lastPlayer, state.lastPlayedText);
+    }
+
+    function renderHand(state) {
+      handArea.innerHTML = "";
+      if (!state.hand || !state.hand.length) return;
+
+      const cardWidth = 60;
+      const overlap = Math.min(34, Math.max(18, Math.floor((handArea.clientWidth - cardWidth) / Math.max(1, state.hand.length - 1))));
+      const totalWidth = cardWidth + overlap * (state.hand.length - 1);
+      const startLeft = Math.max(0, Math.floor((handArea.clientWidth - totalWidth) / 2));
+
+      const invalid = [];
+      selectedIndices.forEach(index => {
+        if (index >= state.hand.length) invalid.push(index);
+      });
+      invalid.forEach(index => selectedIndices.delete(index));
+
+      state.hand.forEach((cardName, index) => {
+        const div = document.createElement("div");
+        div.className = "my-card" + (selectedIndices.has(index) ? " selected" : "");
+        div.style.left = (startLeft + index * overlap) + "px";
+        div.style.top = selectedIndices.has(index) ? "6px" : "28px";
+        div.textContent = cardName;
+        div.onclick = () => {
+          if (!gameState || gameState.currentPlayer !== 0 || gameState.gameOver) return;
+          if (selectedIndices.has(index)) selectedIndices.delete(index);
+          else selectedIndices.add(index);
+          renderHand(gameState);
+        };
+        handArea.appendChild(div);
+      });
+    }
+
+    function renderAll() {
+      updateState();
+      renderStatus(gameState);
+      renderHand(gameState);
+    }
+
+    function mallocIntArray(values) {
+      const bytes = values.length * 4;
+      const ptr = wasmModule._malloc(bytes);
+      wasmModule.HEAP32.set(values, ptr >> 2);
+      return ptr;
+    }
+
+    function describeAIAction(before, after) {
+      if (!before || !after) return null;
+      let actor = null;
+      if (before.currentPlayer === 1) actor = "电脑1";
+      else if (before.currentPlayer === 2) actor = "电脑2";
+      if (!actor) return null;
+
+      if (after.lastPlayer === before.currentPlayer) {
+        return `${actor} 出了：${after.lastPlayedText || "未知牌面"}（${playTypeName(after.lastPlayType)}）`;
+      }
+      return `${actor} 过牌。`;
+    }
+
+    function autoRunAI() {
+      let guard = 0;
+      while (!gameState.gameOver && gameState.currentPlayer !== 0 && guard < 50) {
+        const before = JSON.parse(JSON.stringify(gameState));
+        wasmModule._game_ai_step();
+        updateState();
+        renderStatus(gameState);
+        renderHand(gameState);
+
+        const msg = describeAIAction(before, gameState);
+        if (msg) appendLog(msg);
+
+        guard++;
+      }
+    }
+
+    function startGame() {
+      if (!wasmModule) {
+        appendLog("WASM 模块还没加载好。");
+        return;
+      }
+      wasmModule._game_init();
+      selectedIndices.clear();
+      prevState = null;
+      renderAll();
+      appendLog("新游戏开始。");
+
+      if (gameState.landlordIndex >= 0) {
+        appendLog(`${playerName(gameState.landlordIndex)} 是地主。`);
+      }
+
+      if (gameState.currentPlayer !== 0 && !gameState.gameOver) {
+        appendLog(`${playerName(gameState.currentPlayer)} 先手，自动运行中。`);
+        autoRunAI();
+      }
+
+      if (gameState.currentPlayer === 0 && !gameState.gameOver) {
+        appendLog("轮到你了。");
+      }
+    }
+
+    function playSelected() {
+      if (!gameState) return appendLog("请先开始游戏。");
+      if (gameState.gameOver) return appendLog("游戏已经结束。");
+      if (gameState.currentPlayer !== 0) return appendLog("还没轮到你。");
+
+      const selected = Array.from(selectedIndices).sort((a, b) => a - b);
+      if (!selected.length) return appendLog("你还没选牌。");
+
+      const ptr = mallocIntArray(selected);
+      const result = wasmModule._game_play(ptr, selected.length);
+      wasmModule._free(ptr);
+
+      if (!result) {
+        renderAll();
+        return appendLog("出牌失败：牌型不合法，或者压不过上家。");
+      }
+
+      selectedIndices.clear();
+      renderAll();
+      appendLog(`你出了：${gameState.lastPlayedText || "未知牌面"}（${playTypeName(gameState.lastPlayType)}）`);
+
+      if (!gameState.gameOver && gameState.currentPlayer !== 0) {
+        autoRunAI();
+      }
+
+      if (gameState.gameOver) appendLog("游戏结束。");
+      else if (gameState.currentPlayer === 0) appendLog("又轮到你了。");
+    }
+
+    function passTurn() {
+      if (!gameState) return appendLog("请先开始游戏。");
+      if (gameState.gameOver) return appendLog("游戏已经结束。");
+      if (gameState.currentPlayer !== 0) return appendLog("还没轮到你过牌。");
+
+      const result = wasmModule._game_pass();
+      if (!result) {
+        renderAll();
+        return appendLog("过牌失败：新一轮第一个出牌的人不能过。");
+      }
+
+      selectedIndices.clear();
+      renderAll();
+      appendLog("你选择了过牌。");
+
+      if (!gameState.gameOver && gameState.currentPlayer !== 0) {
+        autoRunAI();
+      }
+
+      if (gameState.gameOver) appendLog("游戏结束。");
+      else if (gameState.currentPlayer === 0) appendLog("又轮到你了。");
+    }
+
+    function bindButtons() {
+      document.getElementById("btnStart").onclick = startGame;
+      document.getElementById("btnPlay").onclick = playSelected;
+      document.getElementById("btnPass").onclick = passTurn;
+      document.getElementById("btnRefresh").onclick = () => {
+        if (!wasmModule) return;
+        renderAll();
+        appendLog("界面已刷新。");
+      };
+    }
+
+    async function loadModule() {
+      if (typeof GameModule === "function") {
+        wasmModule = await GameModule();
+      } else if (typeof Module !== "undefined") {
+        wasmModule = await Module;
+      } else {
+        throw new Error("没有找到 game.js 导出的模块。");
+      }
+
+      bindButtons();
+      appendLog("WASM 模块加载完成。先点“开始游戏”。");
+    }
+
+    loadModule().catch(err => {
+      console.error(err);
+      appendLog("加载失败：" + err.message);
+    });
+
+    window.addEventListener("resize", () => {
+      if (gameState) renderHand(gameState);
+    });
+  </script>
+</body>
+</html>
