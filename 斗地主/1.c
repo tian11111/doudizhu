@@ -66,6 +66,7 @@ typedef struct {
     int cardCount;              // 当前手中牌的数量
     bool isLandlord;            // 是否是地主
     TeamType team;              // 所属队伍（新增）
+    int score;                  // 积分（新增）
 } Player;
 
 // 牌堆结构体
@@ -124,6 +125,7 @@ void reset_all() {
         players[i].cardCount = 0;
         players[i].isLandlord = false;
         players[i].team = TEAM_FARMER;  // 默认农民队
+        players[i].score = 0;           // 初始化积分为0（新增）
         memset(players[i].hand, 0, sizeof(players[i].hand));
         memset(players[i].name, 0, sizeof(players[i].name));
     }
@@ -435,6 +437,31 @@ int game_play_by_player(int playerIdx, int selected[], int count) {
     if (check_team_win()) {
         gameOver = true;
         printf("game over! %s team wins!\n", player->team == TEAM_LANDLORD ? "landlord" : "farmer");
+        
+        // 计算并更新积分（新增）
+        if (player->team == TEAM_LANDLORD) {
+            // 地主队获胜
+            players[landlordIndex].score += 2;
+            for (int i = 0; i < 3; i++) {
+                if (!players[i].isLandlord) {
+                    players[i].score -= 1;
+                }
+            }
+        } else {
+            // 农民队获胜
+            for (int i = 0; i < 3; i++) {
+                if (!players[i].isLandlord) {
+                    players[i].score += 1;
+                } else {
+                    players[i].score -= 2;
+                }
+            }
+        }
+        // 打印积分信息
+        printf("积分更新：\n");
+        for (int i = 0; i < 3; i++) {
+            printf("%s: %d\n", players[i].name, players[i].score);
+        }
     }
 
     gameRound++;
@@ -599,6 +626,11 @@ const char* game_get_state_json() {
     offset += sprintf(buffer + offset, "\"myCardCount\":%d,", players[0].cardCount);
     offset += sprintf(buffer + offset, "\"ai1CardCount\":%d,", players[1].cardCount);
     offset += sprintf(buffer + offset, "\"ai2CardCount\":%d,", players[2].cardCount);
+    
+    // 各玩家积分（新增）
+    offset += sprintf(buffer + offset, "\"myScore\":%d,", players[0].score);
+    offset += sprintf(buffer + offset, "\"ai1Score\":%d,", players[1].score);
+    offset += sprintf(buffer + offset, "\"ai2Score\":%d,", players[2].score);
 
     // 上一手牌信息
     offset += sprintf(buffer + offset, "\"lastPlayType\":%d,", lastPlay.type);
@@ -837,6 +869,31 @@ int game_ai_step() {
     if (check_team_win()) {
         gameOver = true;
         printf("游戏结束！%s队获胜！\n", players[i].team == TEAM_LANDLORD ? "地主" : "农民");
+        
+        // 计算并更新积分（新增）
+        if (players[i].team == TEAM_LANDLORD) {
+            // 地主队获胜
+            players[landlordIndex].score += 2;
+            for (int j = 0; j < 3; j++) {
+                if (!players[j].isLandlord) {
+                    players[j].score -= 1;
+                }
+            }
+        } else {
+            // 农民队获胜
+            for (int j = 0; j < 3; j++) {
+                if (!players[j].isLandlord) {
+                    players[j].score += 1;
+                } else {
+                    players[j].score -= 2;
+                }
+            }
+        }
+        // 打印积分信息
+        printf("积分更新：\n");
+        for (int j = 0; j < 3; j++) {
+            printf("%s: %d\n", players[j].name, players[j].score);
+        }
     }
 
     // 切换玩家

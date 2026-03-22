@@ -98,6 +98,61 @@
       backdrop-filter: blur(4px);
     }
 
+    .scoreboard {
+      width: calc(100% - 16px);
+      margin: 10px auto 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .score-chip {
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 16px;
+      padding: 10px 8px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+      box-shadow: var(--shadow);
+    }
+
+    .score-chip.me {
+      border-color: rgba(250,204,21,0.36);
+      background: rgba(250,204,21,0.12);
+    }
+
+    .score-name {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .score-value {
+      font-size: 22px;
+      font-weight: 900;
+      color: #fff5c2;
+      line-height: 1;
+    }
+
+    .score-tag {
+      margin-top: 6px;
+      display: inline-block;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      color: #eefcf5;
+    }
+
+    .score-positive {
+      color: #86efac;
+    }
+
+    .score-negative {
+      color: #fca5a5;
+    }
+
     .phase-bar {
       width: calc(100% - 16px);
       margin: 10px auto 0;
@@ -501,6 +556,7 @@
       }
 
       .top-status,
+      .scoreboard,
       .phase-bar,
       .board,
       .rob-panel,
@@ -513,6 +569,22 @@
 
       .top-status {
         font-size: 14px;
+      }
+
+      .scoreboard {
+        gap: 12px;
+      }
+
+      .score-chip {
+        padding: 14px 10px;
+      }
+
+      .score-name {
+        font-size: 14px;
+      }
+
+      .score-value {
+        font-size: 30px;
       }
 
       .board {
@@ -617,6 +689,24 @@
         <span id="roundText">回合：--</span>
         <span id="turnText">当前轮到：--</span>
         <span id="stateText">游戏状态：未开始</span>
+      </div>
+
+      <div class="scoreboard">
+        <div class="score-chip">
+          <div class="score-name">电脑1 积分</div>
+          <div class="score-value" id="ai1Score">0</div>
+          <div class="score-tag" id="ai1Role">农民</div>
+        </div>
+        <div class="score-chip me">
+          <div class="score-name">你的积分</div>
+          <div class="score-value" id="myScore">0</div>
+          <div class="score-tag" id="myRole">农民</div>
+        </div>
+        <div class="score-chip">
+          <div class="score-name">电脑2 积分</div>
+          <div class="score-value" id="ai2Score">0</div>
+          <div class="score-tag" id="ai2Role">农民</div>
+        </div>
       </div>
 
       <div class="phase-bar">
@@ -762,6 +852,17 @@
         8: "王炸"
       };
       return map[type] || "未知";
+    }
+
+    function scoreClass(score) {
+      if (score > 0) return "score-value score-positive";
+      if (score < 0) return "score-value score-negative";
+      return "score-value";
+    }
+
+    function playerRole(index, state) {
+      if (!state || state.landlordIndex === -1) return "未定";
+      return state.landlordIndex === index ? "地主" : "农民";
     }
 
     function unlockAudio() {
@@ -916,6 +1017,20 @@
       document.getElementById("ai1Count").textContent = `剩余 ${state.ai1CardCount} 张`;
       document.getElementById("ai2Count").textContent = `剩余 ${state.ai2CardCount} 张`;
 
+      const myScoreEl = document.getElementById("myScore");
+      const ai1ScoreEl = document.getElementById("ai1Score");
+      const ai2ScoreEl = document.getElementById("ai2Score");
+      myScoreEl.textContent = state.myScore ?? 0;
+      ai1ScoreEl.textContent = state.ai1Score ?? 0;
+      ai2ScoreEl.textContent = state.ai2Score ?? 0;
+      myScoreEl.className = scoreClass(state.myScore ?? 0);
+      ai1ScoreEl.className = scoreClass(state.ai1Score ?? 0);
+      ai2ScoreEl.className = scoreClass(state.ai2Score ?? 0);
+
+      document.getElementById("myRole").textContent = playerRole(0, state);
+      document.getElementById("ai1Role").textContent = playerRole(1, state);
+      document.getElementById("ai2Role").textContent = playerRole(2, state);
+
       setTurn("meTurn", state.currentPlayer === 0 && state.landlordRobbed);
       setTurn("ai1Turn", state.currentPlayer === 1 && state.landlordRobbed);
       setTurn("ai2Turn", state.currentPlayer === 2 && state.landlordRobbed);
@@ -1053,6 +1168,8 @@
 
       endSoundPlayed = true;
       stopBgm();
+
+      appendLog(`本局积分结算：你 ${gameState.myScore ?? 0}，电脑1 ${gameState.ai1Score ?? 0}，电脑2 ${gameState.ai2Score ?? 0}`);
 
       if (gameState.myCardCount === 0) {
         playWinSound();
