@@ -100,7 +100,9 @@ void sortHandByPoint(Player* player);
 Play analyzePlay(const Player* player, int selected[], int selectedCount);
 bool canPlayBeat(const Play* current, const Play* last);
 int check_play_valid(int selected[], int count);
+int game_play_by_player(int playerIdx, int selected[], int count);
 int game_play(int selected[], int count);
+int game_pass_by_player(int playerIdx);
 int game_pass();
 const char* game_get_state_json();
 int game_ai_step();
@@ -390,7 +392,7 @@ bool canPlayBeat(const Play* current, const Play* last) {
 int check_play_valid(int selected[], int count) {
     if (count <= 0) return 0;
 
-    Play current_play = analyzePlay(&players[0], selected, count);
+    Play current_play = analyzePlay(&players[currentPlayer], selected, count);
     if (current_play.type == PASS) {
         return 0;
     }
@@ -402,11 +404,50 @@ int check_play_valid(int selected[], int count) {
     return 1;
 }
 
+int game_play_by_player(int playerIdx, int selected[], int count) {
+    if (!landlordRobbed) return 0;
+    if (gameOver) return 0;
+    if (playerIdx != currentPlayer) return 0;
+
+    Player* player = &players[playerIdx];
+    Play currentPlay = analyzePlay(player, selected, count);
+
+    if (currentPlay.type == PASS) return 0;
+    if (!canPlayBeat(&currentPlay, &lastPlay)) return 0;
+
+    buildPlayedTextFromSelection(player, selected, count);
+
+    for (int k = count - 1; k >= 0; k--) {
+        int idx = selected[k];
+        if (idx < 0 || idx >= player->cardCount) return 0;
+
+        for (int j = idx; j < player->cardCount - 1; j++) {
+            player->hand[j] = player->hand[j + 1];
+        }
+        player->cardCount--;
+    }
+
+    lastPlay = currentPlay;
+    lastPlayer = playerIdx;
+    passCount = 0;
+    currentPlayer = (playerIdx + 1) % 3;
+
+    if (check_team_win()) {
+        gameOver = true;
+        printf("game over! %s team wins!\n", player->team == TEAM_LANDLORD ? "landlord" : "farmer");
+    }
+
+    gameRound++;
+    return 1;
+}
+
 // 玩家出牌
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
 #endif
 int game_play(int selected[], int count) {
+    return game_play_by_player(0, selected, count);
+
     // 抢地主未完成时不能出牌
     if (!landlordRobbed) {
         return 0;
@@ -444,10 +485,60 @@ int game_play(int selected[], int count) {
 }
 
 // 过牌
+#if 0
+int game_pass_by_player(int playerIdx) {
+    if (!landlordRobbed) return 0;
+    if (gameOver) return 0;
+    if (playerIdx != currentPlayer) return 0;
+
+    if (lastPlay.type == PASS) return 0;
+
+    strcpy(lastPlayedText, "杩囩墝");
+
+    passCount++;
+    lastPlayer = playerIdx;
+    currentPlayer = (playerIdx + 1) % 3;
+
+    if (passCount >= 2) {
+        lastPlay.type = PASS;
+        lastPlayer = -1;
+        passCount = 0;
+    }
+
+    gameRound++;
+    return 1;
+}
+#endif
+
+int game_pass_by_player(int playerIdx) {
+    if (!landlordRobbed) return 0;
+    if (gameOver) return 0;
+    if (playerIdx != currentPlayer) return 0;
+
+    if (lastPlay.type == PASS) return 0;
+
+    strcpy(lastPlayedText, "pass");
+
+    passCount++;
+    lastPlayer = playerIdx;
+    currentPlayer = (playerIdx + 1) % 3;
+
+    if (passCount >= 2) {
+        lastPlay.type = PASS;
+        lastPlayer = -1;
+        passCount = 0;
+    }
+
+    gameRound++;
+    return 1;
+}
+
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
 #endif
 int game_pass() {
+    return game_pass_by_player(0);
+
     if (!landlordRobbed) {
         return 0;
     }
@@ -625,7 +716,7 @@ int get_best_play(int playerIdx) {
             if (play.type == SINGLE && play.point <= POINT_5) {
                 // 出这张牌
                 int selectedArr[1] = { i };
-                game_play(selectedArr, 1);
+                game_play_by_player(playerIdx, selectedArr, 1);
                 return 1;
             }
         }
@@ -635,14 +726,14 @@ int get_best_play(int playerIdx) {
                 int selected[2] = { i, i + 1 };
                 Play play = analyzePlay(player, selected, 2);
                 if (play.type == PAIR && play.point <= POINT_5) {
-                    game_play(selected, 2);
+                    game_play_by_player(playerIdx, selected, 2);
                     return 1;
                 }
             }
         }
         // 否则出任意合法牌
         int selected[1] = { 0 };
-        game_play(selected, 1);
+        game_play_by_player(playerIdx, selected, 1);
         return 1;
     }
 
@@ -707,11 +798,11 @@ int get_best_play(int playerIdx) {
 
     // 找到最优牌则出，否则过牌
     if (found) {
-        game_play(bestSelected, bestCount);
+        game_play_by_player(playerIdx, bestSelected, bestCount);
         return 1;
     }
     else {
-        game_pass();
+        game_pass_by_player(playerIdx);
         return 0;
     }
 }
@@ -749,8 +840,6 @@ int game_ai_step() {
     }
 
     // 切换玩家
-    currentPlayer = (i + 1) % 3;
-    gameRound++;
     return 1;
 }
 
