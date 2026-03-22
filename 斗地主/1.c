@@ -4,6 +4,9 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 // 出牌类型
 typedef enum {
@@ -18,6 +21,12 @@ typedef enum {
     ROCKET            // 王炸（大小王）
 } PlayType;
 
+// 队伍枚举（新增：地主队/农民队）
+typedef enum {
+    TEAM_LANDLORD,    // 地主队
+    TEAM_FARMER       // 农民队
+} TeamType;
+
 // 表示一次出牌行为
 typedef struct {
     PlayType type;
@@ -30,11 +39,11 @@ typedef struct {
 // 牌种类枚举
 typedef enum {
     CLUBS,      // 梅花
-    DIAMONDS,       // 方片
-    HEARTS,         // 红桃
-    SPADES,         // 黑桃
-    JOKER_SMALL,    // 小王
-    JOKER_BIG       // 大王
+    DIAMONDS,   // 方片
+    HEARTS,     // 红桃
+    SPADES,     // 黑桃
+    JOKER_SMALL,// 小王
+    JOKER_BIG   // 大王
 } Suit;
 
 // 点数枚举
@@ -56,6 +65,7 @@ typedef struct {
     Card hand[20];              // 手牌数组
     int cardCount;              // 当前手中牌的数量
     bool isLandlord;            // 是否是地主
+    TeamType team;              // 所属队伍（新增）
 } Player;
 
 // 牌堆结构体
@@ -64,6 +74,7 @@ typedef struct {
     int top;
 } Deck;
 
+// 全局变量
 Deck gameDeck;
 Player players[3];
 Play lastPlay;
@@ -75,21 +86,47 @@ bool gameOver;
 char lastPlayedText[256];
 int landlordIndex = -1;
 char buffer[4096];
+bool landlordRobbed = false;    // 抢地主是否完成（新增）
+Card landlordCards[3];          // 地主底牌（新增）
 
+// 函数声明
 void clearLastPlayedText();
 void buildPlayedTextFromSelection(const Player* player, int selected[], int count);
+void reset_all();
+void initializeDeck(Deck* deck);
+void shuffleDeck(Deck* deck);
+void dealCards(Deck* deck, Player players[]);
+void sortHandByPoint(Player* player);
+Play analyzePlay(const Player* player, int selected[], int selectedCount);
+bool canPlayBeat(const Play* current, const Play* last);
+int check_play_valid(int selected[], int count);
+int game_play(int selected[], int count);
+int game_pass();
+const char* game_get_state_json();
+int game_ai_step();
+void game_init();
+void game_auto_run();
 
+// 新增函数声明
+void rob_landlord(int playerIdx);       // 玩家抢地主
+void ai_rob_landlord(int playerIdx);    // AI抢地主逻辑
+void assign_landlord_cards();           // 分配地主底牌
+int get_best_play(int playerIdx);       // 智能出牌逻辑（核心）
+bool check_team_win();                  // 检查队伍是否获胜
+void update_player_team();              // 更新玩家队伍归属
+
+// 重置所有游戏状态
 void reset_all() {
     // 清空三个玩家的所有数据
     for (int i = 0; i < 3; i++) {
         players[i].cardCount = 0;
         players[i].isLandlord = false;
-        memset(players[i].hand, 0, sizeof(players[i].hand)); // 清空手牌
-        memset(players[i].name, 0, sizeof(players[i].name)); // 清空名字
+        players[i].team = TEAM_FARMER;  // 默认农民队
+        memset(players[i].hand, 0, sizeof(players[i].hand));
+        memset(players[i].name, 0, sizeof(players[i].name));
     }
-    // 清空牌堆
+    // 清空牌堆和全局状态
     memset(&gameDeck, 0, sizeof(Deck));
-    // 清空全局游戏状态
     memset(&lastPlay, 0, sizeof(Play));
     lastPlayer = -1;
     passCount = 0;
@@ -97,6 +134,8 @@ void reset_all() {
     currentPlayer = 0;
     gameOver = false;
     landlordIndex = -1;
+    landlordRobbed = false;
+    memset(landlordCards, 0, sizeof(landlordCards));
     clearLastPlayedText();
     memset(buffer, 0, sizeof(buffer));
 }
@@ -115,11 +154,13 @@ void initializeDeck(Deck* deck) {
             index++;
         }
     }
+    // 小王
     deck->deck[index++] = (Card){
         .name = "小王",
         .suit = JOKER_SMALL,
         .point = POINT_SMALL_JOKER
     };
+    // 大王
     deck->deck[index++] = (Card){
         .name = "大王",
         .suit = JOKER_BIG,
@@ -137,19 +178,23 @@ void shuffleDeck(Deck* deck) {
     }
 }
 
-// 发牌
+// 发牌（新增：预留3张地主底牌）
 void dealCards(Deck* deck, Player players[]) {
+    // 先给3个玩家发17张牌
     for (int cardIdx = 0; cardIdx < 51; cardIdx++) {
         int playerIndex = cardIdx % 3;
         int targetSlot = players[playerIndex].cardCount;
-        //targetSlot表示这张新牌应该插入到手牌数组的哪个位置（下标）
         players[playerIndex].hand[targetSlot] = deck->deck[cardIdx];
         players[playerIndex].cardCount++;
     }
-    printf("发牌完成，每人获得 %d 张牌。\n", 17);
+    // 保存3张地主底牌
+    for (int i = 0; i < 3; i++) {
+        landlordCards[i] = deck->deck[51 + i];
+    }
+    printf("发牌完成，预留3张地主底牌！\n");
 }
 
-// 排序
+// 手牌排序
 void sortHandByPoint(Player* player) {
     for (int i = 0; i < player->cardCount - 1; i++) {
         for (int j = 0; j < player->cardCount - i - 1; j++) {
@@ -162,44 +207,23 @@ void sortHandByPoint(Player* player) {
     }
 }
 
-// 打印我的所有手牌
-void printPlayerHand(const Player* player) {
-    printf("%s [%s] 的手牌 (%d张):\n",
-        player->name,
-        player->isLandlord ? "地主" : "农民",
-        player->cardCount);
-    for (int i = 0; i < player->cardCount; i++) {
-        printf("[%d]%s\t", i, player->hand[i].name);
-    }
-    printf("\n");
-
+// 清空出牌文本
+void clearLastPlayedText() {
+    lastPlayedText[0] = '\0';
 }
-// 让玩家选择一张牌打出（返回牌的索引，-1 表示过牌）
-int getPlayerChoice(const Player* player, int lastPoint) {
-    while (1) {
-        printf("轮到你出牌！输入牌的编号（0-%d），或输入 -1 表示过牌: ", player->cardCount - 1);
-        int choice;
-        scanf("%d", &choice);
 
-        if (choice == -1) {
-            return -1;  // 过牌
+// 构建出牌文本描述
+void buildPlayedTextFromSelection(const Player* player, int selected[], int count) {
+    clearLastPlayedText();
+    for (int i = 0; i < count; i++) {
+        if (i > 0) {
+            strcat(lastPlayedText, " ");
         }
-
-        if (choice >= 0 && choice < player->cardCount) {
-            // 检查是否大于上家的牌
-            if (lastPoint != -1 && player->hand[choice].point <= lastPoint) {
-                printf("你出的牌太小了！必须大于上家的牌。\n");
-                continue;
-            }
-            return choice;
-        }
-        else {
-            printf("输入无效！请输入 0 到 %d 之间的数字。\n", player->cardCount - 1);
-        }
+        strcat(lastPlayedText, player->hand[selected[i]].name);
     }
 }
 
-
+// 分析牌型
 Play analyzePlay(const Player* player, int selected[], int selectedCount) {
     Play play = { 0 };
     play.cardCount = selectedCount;
@@ -230,7 +254,7 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
         play.cardIndices[i] = selected[i];
     }
 
-    // 先判断王炸
+    // 王炸
     if (selectedCount == 2) {
         if ((points[0] == POINT_SMALL_JOKER && points[1] == POINT_BIG_JOKER)) {
             play.type = ROCKET;
@@ -240,7 +264,7 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
         }
     }
 
-    //再判断对子
+    // 对子
     if (selectedCount == 2 && points[0] == points[1]) {
         play.type = PAIR;
         play.point = points[0];
@@ -255,7 +279,8 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
         play.length = 1;
         return play;
     }
-        // 三张
+
+    // 三张
     if (selectedCount == 3 && points[0] == points[2]) {
         play.type = TRIPLE;
         play.point = points[0];
@@ -265,26 +290,23 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
 
     // 三带一
     if (selectedCount == 4) {
-    // 必须是三张 + 单张，不能是四张一样
-    if ((points[0] == points[2] && points[2] != points[3]) ||
-        (points[1] == points[3] && points[0] != points[1])) {
-        play.type = TRIPLE_ONE;
-        play.point = (points[0] == points[2]) ? points[0] : points[1];
-        play.length = 4;
-        return play;
+        if ((points[0] == points[2] && points[2] != points[3]) ||
+            (points[1] == points[3] && points[0] != points[1])) {
+            play.type = TRIPLE_ONE;
+            play.point = (points[0] == points[2]) ? points[0] : points[1];
+            play.length = 4;
+            return play;
         }
     }
 
     // 三带二
     if (selectedCount == 5) {
-        // 形如 AAA+BB
         if (points[0] == points[2] && points[3] == points[4]) {
             play.type = TRIPLE_PAIR;
             play.point = points[0];
             play.length = 5;
             return play;
         }
-        // 形如 AA+BBB
         if (points[0] == points[1] && points[2] == points[4]) {
             play.type = TRIPLE_PAIR;
             play.point = points[2];
@@ -292,7 +314,8 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
             return play;
         }
     }
-    // 炸弹（四张相同）
+
+    // 炸弹
     if (selectedCount == 4 && points[0] == points[3]) {
         play.type = BOMB;
         play.point = points[0];
@@ -300,7 +323,7 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
         return play;
     }
 
-    // 顺子（5张及以上，连续，3~A）
+    // 顺子
     if (selectedCount >= 5) {
         bool isStraight = true;
         for (int i = 0; i < selectedCount - 1; i++) {
@@ -317,81 +340,85 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
         }
     }
 
-    // 其他情况：非法牌型
+    // 非法牌型
     play.type = PASS;
     return play;
 }
-// 判断当前出的牌是否能打过上一家
+
+// 判断当前牌能否打过上家
 bool canPlayBeat(const Play* current, const Play* last) {
     if (last->type == PASS) {
-        return true;  // 上家没出牌（或过牌），任何合法牌都能出
+        return true;
     }
 
-    // 1. 王炸最大，能打任何牌
+    // 王炸最大
     if (current->type == ROCKET) {
         return true;
     }
     if (last->type == ROCKET) {
-        return false;  // 上家是王炸，你不是，打不过
+        return false;
     }
 
-    // 2. 炸弹可以打除王炸外的任何牌
+    // 炸弹打非王炸
     if (current->type == BOMB && last->type != ROCKET) {
-        // 但要比较点数（炸弹之间比点数）
         if (last->type == BOMB) {
             return current->point > last->point;
         }
-        return true;  // 打非炸弹牌
+        return true;
     }
     if (last->type == BOMB && current->type != BOMB && current->type != ROCKET) {
-        return false; // 上家是炸弹，你不是，打不过
+        return false;
     }
 
-    // 3. 同类型比较
+    // 同类型比较
     if (current->type == last->type) {
         if (current->type == STRAIGHT) {
-            // 顺子：长度必须相同，且起始点数更高
             if (current->length != last->length) {
                 return false;
             }
             return current->point > last->point;
         }
         else {
-            // 单张、对子、炸弹（已处理）等：比点数
             return current->point > last->point;
         }
     }
 
-    // 其他情况：类型不同，不能打
     return false;
 }
 
+// 检查出牌是否合法
 int check_play_valid(int selected[], int count) {
-    if (count <= 0) return 0; // 没选牌直接返回不能出
+    if (count <= 0) return 0;
 
-    // 第一步：分析牌型是否合法
     Play current_play = analyzePlay(&players[0], selected, count);
     if (current_play.type == PASS) {
-        return 0; // 非法牌型
+        return 0;
     }
 
-    // 第二步：判断能否打过上家
     if (!canPlayBeat(&current_play, &lastPlay)) {
-        return 0; // 打不过上家
+        return 0;
     }
 
-    return 1; // 合法且能出
+    return 1;
 }
 
-
+// 玩家出牌
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 int game_play(int selected[], int count) {
+    // 抢地主未完成时不能出牌
+    if (!landlordRobbed) {
+        return 0;
+    }
+
     Play currentPlay = analyzePlay(&players[0], selected, count);
 
     if (currentPlay.type == PASS) return 0;
     if (!canPlayBeat(&currentPlay, &lastPlay)) return 0;
 
     buildPlayedTextFromSelection(&players[0], selected, count);
-    
+
     // 删除手牌
     for (int k = count - 1; k >= 0; k--) {
         int idx = selected[k];
@@ -406,14 +433,25 @@ int game_play(int selected[], int count) {
     passCount = 0;
     currentPlayer = 1;
 
-    if (players[0].cardCount == 0) {
+    // 检查队伍是否获胜
+    if (check_team_win()) {
         gameOver = true;
+        printf("游戏结束！%s队获胜！\n", players[0].team == TEAM_LANDLORD ? "地主" : "农民");
     }
+
     gameRound++;
     return 1;
 }
 
+// 过牌
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 int game_pass() {
+    if (!landlordRobbed) {
+        return 0;
+    }
+
     if (lastPlay.type == PASS) return 0;
 
     strcpy(lastPlayedText, "过牌");
@@ -431,11 +469,26 @@ int game_pass() {
     return 1;
 }
 
-
+// 获取游戏状态JSON
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 const char* game_get_state_json() {
     int offset = 0;
 
     offset += sprintf(buffer + offset, "{");
+
+    // 基础状态（新增抢地主状态）
+    offset += sprintf(buffer + offset, "\"landlordRobbed\":%s,", landlordRobbed ? "true" : "false");
+    offset += sprintf(buffer + offset, "\"landlordIndex\":%d,", landlordIndex);
+
+    // 地主底牌
+    offset += sprintf(buffer + offset, "\"landlordCards\":[");
+    for (int i = 0; i < 3; i++) {
+        if (i > 0) offset += sprintf(buffer + offset, ",");
+        offset += sprintf(buffer + offset, "\"%s\"", landlordCards[i].name);
+    }
+    offset += sprintf(buffer + offset, "],");
 
     // 我的手牌
     offset += sprintf(buffer + offset, "\"hand\":[");
@@ -445,7 +498,7 @@ const char* game_get_state_json() {
     }
     offset += sprintf(buffer + offset, "],");
 
-    // 基本状态
+    // 游戏流程状态
     offset += sprintf(buffer + offset, "\"currentPlayer\":%d,", currentPlayer);
     offset += sprintf(buffer + offset, "\"gameRound\":%d,", gameRound);
     offset += sprintf(buffer + offset, "\"lastPlayer\":%d,", lastPlayer);
@@ -456,141 +509,257 @@ const char* game_get_state_json() {
     offset += sprintf(buffer + offset, "\"ai1CardCount\":%d,", players[1].cardCount);
     offset += sprintf(buffer + offset, "\"ai2CardCount\":%d,", players[2].cardCount);
 
-    // 上一手牌型和具体牌面
+    // 上一手牌信息
     offset += sprintf(buffer + offset, "\"lastPlayType\":%d,", lastPlay.type);
-    offset += sprintf(buffer + offset, "\"lastPlayedText\":\"%s\",", lastPlayedText);
-    offset += sprintf(buffer + offset, "\"landlordIndex\":%d", landlordIndex);
-    offset += sprintf(buffer + offset, "}");    
+    offset += sprintf(buffer + offset, "\"lastPlayedText\":\"%s\"", lastPlayedText);
+    offset += sprintf(buffer + offset, "}");
 
     return buffer;
 }
 
-int game_ai_step() {
-    int i = currentPlayer;
-    if (i == 0) return 0;   // 轮到人类时，AI不动
-    if (gameOver) return 0;
+// 新增：抢地主功能（玩家调用）
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
+void rob_landlord(int playerIdx) {
+    if (landlordRobbed) return;
 
-    bool found = false;
-    Play currentPlay = { 0 };
-    int selected[20];
-    int selectedCount = 0;
-    bool isPass = false;
+    // 设置地主
+    landlordIndex = playerIdx;
+    players[playerIdx].isLandlord = true;
+    // 分配地主底牌
+    assign_landlord_cards();
+    // 更新队伍
+    update_player_team();
+    // 抢地主完成
+    landlordRobbed = true;
+    // 地主先出牌
+    currentPlayer = landlordIndex;
+    printf("%s 抢地主成功！获得底牌：%s %s %s\n", players[playerIdx].name,
+        landlordCards[0].name, landlordCards[1].name, landlordCards[2].name);
+}
 
-    // 简单 AI：只找最小合法单张
-    if (lastPlay.type == PASS || lastPlay.type == SINGLE) {
-        for (int idx = 0; idx < players[i].cardCount; idx++) {
-            if (lastPlay.type == PASS || players[i].hand[idx].point > lastPlay.point) {
-                selected[0] = idx;
-                selectedCount = 1;
-                currentPlay = analyzePlay(&players[i], selected, 1);
-                if (currentPlay.type == SINGLE) {
-                    found = true;
-                    break;
-                }
-            }
+// 新增：AI抢地主逻辑
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
+void ai_rob_landlord(int playerIdx) {
+    if (landlordRobbed) return;
+
+    // AI抢地主概率：手牌有炸弹/王炸则80%抢，否则20%
+    int bombCount = 0;
+    bool hasRocket = false;
+    int points[20];
+    for (int i = 0; i < players[playerIdx].cardCount; i++) {
+        points[i] = players[playerIdx].hand[i].point;
+    }
+    // 排序点数
+    sortHandByPoint(&players[playerIdx]);
+    // 检查炸弹/王炸
+    for (int i = 0; i < players[playerIdx].cardCount - 3; i++) {
+        if (points[i] == points[i + 1] && points[i + 1] == points[i + 2] && points[i + 2] == points[i + 3]) {
+            bombCount++;
         }
     }
-        // AI 出对子
-    if (!found && lastPlay.type == PAIR) {
-        for (int idx = 0; idx < players[i].cardCount - 1; idx++) {
-            if (players[i].hand[idx].point == players[i].hand[idx + 1].point &&
-                players[i].hand[idx].point > lastPlay.point) {
-                selected[0] = idx;
-                selected[1] = idx + 1;
-                selectedCount = 2;
-                currentPlay = analyzePlay(&players[i], selected, 2);
-                if (currentPlay.type == PAIR) {
-                    found = true;
-                    break;
-                }
-            }
-        }
+    if (points[players[playerIdx].cardCount - 1] == POINT_BIG_JOKER &&
+        points[players[playerIdx].cardCount - 2] == POINT_SMALL_JOKER) {
+        hasRocket = true;
     }
 
-    // AI 出三张
-    if (!found && lastPlay.type == TRIPLE) {
-        for (int idx = 0; idx < players[i].cardCount - 2; idx++) {
-            if (players[i].hand[idx].point == players[i].hand[idx + 2].point &&
-                players[i].hand[idx].point > lastPlay.point) {
-                selected[0] = idx;
-                selected[1] = idx + 1;
-                selected[2] = idx + 2;
-                selectedCount = 3;
-                currentPlay = analyzePlay(&players[i], selected, 3);
-                if (currentPlay.type == TRIPLE) {
-                    found = true;
-                    break;
-                }
-            }
-        }
+    // 随机决定是否抢
+    int randVal = rand() % 100;
+    if ((bombCount > 0 || hasRocket) && randVal < 80) {
+        rob_landlord(playerIdx);
     }
-    // AI 出三带一
-    if (!found && lastPlay.type == TRIPLE_ONE) {
-        for (int idx = 0; idx < players[i].cardCount - 2; idx++) {
-             if (players[i].hand[idx].point == players[i].hand[idx + 2].point &&players[i].hand[idx].point > lastPlay.point) {
-
-                // 找一个单张
-                for (int k = 0; k < players[i].cardCount; k++) {
-                    if (k != idx && k != idx+1 && k != idx+2) {
-                        selected[0] = idx;
-                        selected[1] = idx + 1;
-                        selected[2] = idx + 2;
-                        selected[3] = k;
-                        selectedCount = 4;
-
-                        currentPlay = analyzePlay(&players[i], selected, 4);
-                        if (currentPlay.type == TRIPLE_ONE) {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (found) break;
-        }
-    }   
-    if (!found) {
-        isPass = true;
+    else if (randVal < 20) {
+        rob_landlord(playerIdx);
     }
-
-    if (!isPass) {
-        buildPlayedTextFromSelection(&players[i], selected, selectedCount);
-
-        lastPlay = currentPlay;
-        lastPlayer = i;
-        passCount = 0;
-
-        for (int k = selectedCount - 1; k >= 0; k--) {
-            int idx = selected[k];
-            for (int j = idx; j < players[i].cardCount - 1; j++) {
-                players[i].hand[j] = players[i].hand[j + 1];
-            }
-            players[i].cardCount--;
+    else {
+        printf("%s 放弃抢地主\n", players[playerIdx].name);
+        // 轮到下一个AI
+        int nextAI = (playerIdx + 1) % 3;
+        if (nextAI != 0) { // 跳过玩家
+            ai_rob_landlord(nextAI);
         }
-
-        if (players[i].cardCount == 0) {
-            gameOver = true;
+        else {
+            // 所有AI都不抢，随机分配给一个AI
+            int randAI = 1 + rand() % 2;
+            rob_landlord(randAI);
         }
-    }
-else {
-    strcpy(lastPlayedText, "过牌");
-
-    passCount++;
-
-    if (passCount >= 2) {
-        lastPlay.type = PASS;
-        lastPlayer = -1;
-        passCount = 0;
     }
 }
 
-    // 推进到下一个玩家
+// 新增：分配地主底牌
+void assign_landlord_cards() {
+    if (landlordIndex == -1) return;
+
+    // 把底牌加入地主手牌
+    for (int i = 0; i < 3; i++) {
+        players[landlordIndex].hand[players[landlordIndex].cardCount++] = landlordCards[i];
+    }
+    // 重新排序地主手牌
+    sortHandByPoint(&players[landlordIndex]);
+}
+
+// 新增：更新玩家队伍归属
+void update_player_team() {
+    for (int i = 0; i < 3; i++) {
+        if (players[i].isLandlord) {
+            players[i].team = TEAM_LANDLORD;
+        }
+        else {
+            players[i].team = TEAM_FARMER;
+        }
+    }
+}
+
+// 新增：智能出牌逻辑（核心）
+int get_best_play(int playerIdx) {
+    Player* player = &players[playerIdx];
+    // 1. 无上家出牌时：优先出小牌（单张3、对子33等）
+    if (lastPlay.type == PASS) {
+        // 找最小的单张
+        for (int i = 0; i < player->cardCount; i++) {
+            int selected[1] = { i };
+            Play play = analyzePlay(player, selected, 1);
+            if (play.type == SINGLE && play.point <= POINT_5) {
+                // 出这张牌
+                int selectedArr[1] = { i };
+                game_play(selectedArr, 1);
+                return 1;
+            }
+        }
+        // 无小单张则出最小对子
+        for (int i = 0; i < player->cardCount - 1; i++) {
+            if (player->hand[i].point == player->hand[i + 1].point) {
+                int selected[2] = { i, i + 1 };
+                Play play = analyzePlay(player, selected, 2);
+                if (play.type == PAIR && play.point <= POINT_5) {
+                    game_play(selected, 2);
+                    return 1;
+                }
+            }
+        }
+        // 否则出任意合法牌
+        int selected[1] = { 0 };
+        game_play(selected, 1);
+        return 1;
+    }
+
+    // 2. 有上家出牌时：优先用最小的牌压制
+    Play bestPlay = { 0 };
+    int bestSelected[20] = { 0 };
+    int bestCount = 0;
+    bool found = false;
+
+    // 遍历所有可能的出牌组合
+    // 单张压制
+    if (lastPlay.type == SINGLE) {
+        for (int i = 0; i < player->cardCount; i++) {
+            int selected[1] = { i };
+            Play play = analyzePlay(player, selected, 1);
+            if (play.type == SINGLE && play.point > lastPlay.point) {
+                if (!found || play.point < bestPlay.point) {
+                    bestPlay = play;
+                    bestSelected[0] = i;
+                    bestCount = 1;
+                    found = true;
+                }
+            }
+        }
+    }
+    // 对子压制
+    else if (lastPlay.type == PAIR) {
+        for (int i = 0; i < player->cardCount - 1; i++) {
+            if (player->hand[i].point == player->hand[i + 1].point) {
+                int selected[2] = { i, i + 1 };
+                Play play = analyzePlay(player, selected, 2);
+                if (play.type == PAIR && play.point > lastPlay.point) {
+                    if (!found || play.point < bestPlay.point) {
+                        bestPlay = play;
+                        bestSelected[0] = i;
+                        bestSelected[1] = i + 1;
+                        bestCount = 2;
+                        found = true;
+                    }
+                }
+            }
+        }
+    }
+    // 炸弹压制（非王炸）
+    else if (lastPlay.type != ROCKET) {
+        for (int i = 0; i < player->cardCount - 3; i++) {
+            if (player->hand[i].point == player->hand[i + 1].point &&
+                player->hand[i + 1].point == player->hand[i + 2].point &&
+                player->hand[i + 2].point == player->hand[i + 3].point) {
+                int selected[4] = { i, i + 1, i + 2, i + 3 };
+                Play play = analyzePlay(player, selected, 4);
+                if (play.type == BOMB) {
+                    bestPlay = play;
+                    memcpy(bestSelected, selected, sizeof(selected));
+                    bestCount = 4;
+                    found = true;
+                    break; // 炸弹直接出
+                }
+            }
+        }
+    }
+
+    // 找到最优牌则出，否则过牌
+    if (found) {
+        game_play(bestSelected, bestCount);
+        return 1;
+    }
+    else {
+        game_pass();
+        return 0;
+    }
+}
+
+// 新增：检查队伍是否获胜
+bool check_team_win() {
+    // 检查地主队
+    if (players[landlordIndex].cardCount == 0) {
+        return true;
+    }
+    // 检查农民队
+    for (int i = 0; i < 3; i++) {
+        if (!players[i].isLandlord && players[i].cardCount == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// AI出牌（优化：调用智能出牌逻辑）
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
+int game_ai_step() {
+    int i = currentPlayer;
+    if (i == 0 || gameOver || !landlordRobbed) return 0;
+
+    // 调用智能出牌逻辑
+    get_best_play(i);
+
+    // 检查队伍是否获胜
+    if (check_team_win()) {
+        gameOver = true;
+        printf("游戏结束！%s队获胜！\n", players[i].team == TEAM_LANDLORD ? "地主" : "农民");
+    }
+
+    // 切换玩家
     currentPlayer = (i + 1) % 3;
     gameRound++;
     return 1;
 }
+
+// 游戏初始化
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 void game_init() {
-	reset_all();
+    reset_all();
 
     srand((unsigned)time(NULL));
 
@@ -607,51 +776,43 @@ void game_init() {
         players[i].isLandlord = false;
     }
 
+    // 发牌
     dealCards(&gameDeck, players);
 
-    int landlordIdx = rand() % 3;
-    landlordIndex = landlordIdx;
-    players[landlordIdx].isLandlord = true;
-    printf("\n【地主】: %s\n", players[landlordIdx].name);
-
+    // 手牌排序
     for (int i = 0; i < 3; i++) {
         sortHandByPoint(&players[i]);
     }
 
+    // 初始化游戏流程（抢地主阶段）
     passCount = 0;
     lastPlayer = -1;
     lastPlay.type = PASS;
     gameRound = 1;
-    currentPlayer = landlordIdx;
+    currentPlayer = 0; // 玩家先决定是否抢地主
     gameOver = false;
+    landlordRobbed = false;
     clearLastPlayedText();
+
+    printf("发牌完成！请玩家决定是否抢地主！\n");
 }
 
+// AI自动运行
 void game_auto_run() {
     while (!gameOver && currentPlayer != 0) {
         game_ai_step();
     }
 }
 
-void clearLastPlayedText() {
-    lastPlayedText[0] = '\0';
-}
-
-
-void buildPlayedTextFromSelection(const Player* player, int selected[], int count) {
-    clearLastPlayedText();
-
-    for (int i = 0; i < count; i++) {
-        if (i > 0) {
-            strcat(lastPlayedText, " ");
-        }
-        strcat(lastPlayedText, player->hand[selected[i]].name);
-    }
-}
-
-
+// 主函数
 int main() {
     srand((unsigned)time(NULL));
+    game_init();
+
+    // 测试抢地主流程（玩家抢地主）
+    // rob_landlord(0); // 玩家抢地主
+    // 或AI抢地主
+    // ai_rob_landlord(1);
+
     return 0;
 }
-

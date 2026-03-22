@@ -21,6 +21,7 @@
       --gray: #7b8290;
       --shadow: 0 10px 24px rgba(0,0,0,0.22);
       --card-shadow: 0 8px 16px rgba(0,0,0,0.24);
+      --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
@@ -32,30 +33,40 @@
     html, body {
       margin: 0;
       width: 100%;
-      height: 100%;
+      min-height: 100%;
       background: var(--bg1);
       font-family: "Microsoft YaHei", sans-serif;
       color: var(--text);
-      overflow: hidden;
     }
 
     body {
       background:
         radial-gradient(circle at 50% 35%, var(--bg3) 0%, var(--bg2) 44%, var(--bg1) 100%);
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .app {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      padding-top: max(12px, env(safe-area-inset-top, 0px));
+      width: 100%;
+      min-height: 100vh;
+      padding:
+        max(10px, var(--safe-top))
+        10px
+        calc(12px + var(--safe-bottom))
+        10px;
     }
 
-    .app::before {
+    .app-inner {
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .app-inner::before {
       content: "";
       position: absolute;
-      inset: 8px;
+      inset: 0;
       border: 1px solid rgba(255,255,255,0.07);
       border-radius: 26px;
       pointer-events: none;
@@ -68,11 +79,11 @@
       color: #ffe7a9;
       letter-spacing: 2px;
       text-shadow: 0 3px 10px rgba(0,0,0,0.25);
-      margin-top: 4px;
+      padding-top: 10px;
     }
 
     .top-status {
-      width: calc(100vw - 16px);
+      width: calc(100% - 16px);
       margin: 8px auto 0;
       padding: 8px 10px;
       border-radius: 16px;
@@ -87,8 +98,50 @@
       backdrop-filter: blur(4px);
     }
 
+    .phase-bar {
+      width: calc(100% - 16px);
+      margin: 10px auto 0;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .phase-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: #eefcf5;
+    }
+
+    .bottom-cards {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .mini-card {
+      min-width: 40px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fff, #f3f4f6);
+      color: #111827;
+      border: 1px solid #d1d5db;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: var(--card-shadow);
+    }
+
     .board {
-      width: calc(100vw - 16px);
+      width: calc(100% - 16px);
       margin: 10px auto 0;
       padding: 10px;
       border-radius: 22px;
@@ -102,7 +155,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      align-items: start;
+      align-items: stretch;
     }
 
     .player-mini {
@@ -110,7 +163,7 @@
       border: 1px solid var(--panel-border);
       border-radius: 18px;
       padding: 10px 8px 8px;
-      min-height: 124px;
+      min-height: 128px;
       position: relative;
       backdrop-filter: blur(4px);
     }
@@ -118,7 +171,6 @@
     .player-mini.me-card {
       min-height: auto;
       padding: 12px 10px;
-      margin-top: 10px;
       grid-column: span 2;
     }
 
@@ -261,15 +313,6 @@
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    .me-info {
-      width: calc(100vw - 16px);
-      margin: 10px auto 0;
-    }
-
-    .me-card {
-      text-align: center;
-    }
-
     .play-type {
       margin-top: 8px;
       text-align: center;
@@ -278,20 +321,83 @@
       font-weight: 700;
     }
 
+    .rob-panel {
+      width: calc(100% - 16px);
+      margin: 12px auto 0;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: none;
+    }
+
+    .rob-panel.show {
+      display: block;
+    }
+
+    .rob-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffe7a9;
+      margin-bottom: 10px;
+    }
+
+    .rob-tip {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      line-height: 1.6;
+    }
+
+    .rob-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .rob-btn {
+      border: none;
+      border-radius: 16px;
+      padding: 12px 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+    }
+
+    .btn-rob {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+    }
+
+    .btn-no-rob {
+      background: linear-gradient(180deg, #8b93a1, #6b7280);
+    }
+
     .hand-wrap {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: calc(136px + var(--safe-bottom));
-      height: 138px;
-      padding: 0 8px;
-      z-index: 12;
+      margin-top: 12px;
+      width: calc(100% - 16px);
+      margin-left: auto;
+      margin-right: auto;
+      padding: 10px 8px 14px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.14);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .hand-title {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: #eefcf5;
     }
 
     .hand-area {
       position: relative;
       width: 100%;
-      height: 100%;
+      height: 118px;
       overflow: hidden;
     }
 
@@ -322,17 +428,14 @@
     }
 
     .controls {
-      position: fixed;
-      left: 8px;
-      right: 8px;
-      bottom: calc(10px + var(--safe-bottom));
-      z-index: 20;
+      width: calc(100% - 16px);
+      margin: 12px auto 0;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
 
-    button {
+    button.action {
       border: none;
       border-radius: 18px;
       padding: 11px 8px;
@@ -357,29 +460,25 @@
     }
 
     .log-toggle {
-      position: fixed;
-      left: 10px;
-      bottom: calc(140px + var(--safe-bottom));
-      z-index: 21;
+      width: calc(100% - 16px);
+      margin: 12px auto 0;
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 999px;
-      padding: 8px 14px;
+      padding: 10px 14px;
       font-size: 12px;
       font-weight: 800;
       background: rgba(0,0,0,0.34);
       color: white;
       backdrop-filter: blur(4px);
+      display: block;
     }
 
     .log {
-      position: fixed;
-      left: 10px;
-      right: 10px;
-      bottom: calc(192px + var(--safe-bottom));
+      width: calc(100% - 16px);
+      margin: 10px auto 0;
       max-height: 180px;
       overflow-y: auto;
       display: none;
-      z-index: 30;
       background: rgba(0,0,0,0.42);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 16px;
@@ -396,28 +495,27 @@
     }
 
     @media (min-width: 769px) {
-      html, body {
-        overflow: auto;
-      }
-
-      .app {
-        min-height: 100vh;
-        height: auto;
-        padding-bottom: 250px;
-      }
-
       .title {
         font-size: 32px;
         margin-top: 8px;
       }
 
+      .top-status,
+      .phase-bar,
+      .board,
+      .rob-panel,
+      .hand-wrap,
+      .controls,
+      .log-toggle,
+      .log {
+        width: calc(100% - 24px);
+      }
+
       .top-status {
-        width: min(960px, calc(100vw - 24px));
         font-size: 14px;
       }
 
       .board {
-        width: min(960px, calc(100vw - 24px));
         padding: 16px;
       }
 
@@ -487,12 +585,8 @@
         font-size: 15px;
       }
 
-      .hand-wrap {
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(1100px, calc(100vw - 24px));
-        bottom: 130px;
-        height: 160px;
+      .hand-area {
+        height: 154px;
       }
 
       .my-card {
@@ -504,111 +598,120 @@
       }
 
       .controls {
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(780px, calc(100vw - 24px));
         grid-template-columns: repeat(6, 1fr);
-        bottom: 18px;
       }
 
-      .log-toggle {
-        left: 16px;
-        bottom: 18px;
-      }
-
-      .log {
-        left: 16px;
-        width: 320px;
-        right: auto;
-        bottom: 70px;
+      .rob-actions {
+        max-width: 360px;
+        margin: 0 auto;
       }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="title">斗地主</div>
+    <div class="app-inner">
+      <div class="title">斗地主</div>
 
-    <div class="top-status">
-      <span id="roundText">回合：--</span>
-      <span id="turnText">当前轮到：--</span>
-      <span id="stateText">游戏状态：进行中</span>
-    </div>
+      <div class="top-status">
+        <span id="roundText">回合：--</span>
+        <span id="turnText">当前轮到：--</span>
+        <span id="stateText">游戏状态：未开始</span>
+      </div>
 
-    <div class="board">
-      <div class="ai-row">
-        <div class="player-mini">
-          <div id="landlord1"></div>
-          <div class="player-head">
-            <div class="player-name">电脑1</div>
-            <div class="player-count" id="ai1Count">剩余 17 张</div>
-            <div id="ai1Turn"></div>
+      <div class="phase-bar">
+        <div class="phase-text" id="phaseText">阶段：未开始</div>
+        <div class="bottom-cards" id="bottomCards"></div>
+      </div>
+
+      <div class="board">
+        <div class="ai-row">
+          <div class="player-mini">
+            <div id="landlord1"></div>
+            <div class="player-head">
+              <div class="player-name">电脑1</div>
+              <div class="player-count" id="ai1Count">剩余 17 张</div>
+              <div id="ai1Turn"></div>
+            </div>
+            <div class="back-area" id="ai1Backs"></div>
           </div>
-          <div class="back-area" id="ai1Backs"></div>
+
+          <div class="player-mini">
+            <div id="landlord2"></div>
+            <div class="player-head">
+              <div class="player-name">电脑2</div>
+              <div class="player-count" id="ai2Count">剩余 17 张</div>
+              <div id="ai2Turn"></div>
+            </div>
+            <div class="back-area" id="ai2Backs"></div>
+          </div>
+
+          <div class="player-mini me-card">
+            <div id="landlord0"></div>
+            <div class="player-head">
+              <div class="player-name">你</div>
+              <div class="player-count" id="myCount">剩余 17 张</div>
+              <div id="meTurn"></div>
+            </div>
+            <div class="play-type" id="playTypeText">牌型：--</div>
+          </div>
         </div>
 
-        <div class="player-mini">
-          <div id="landlord2"></div>
-          <div class="player-head">
-            <div class="player-name">电脑2</div>
-            <div class="player-count" id="ai2Count">剩余 17 张</div>
-            <div id="ai2Turn"></div>
-          </div>
-          <div class="back-area" id="ai2Backs"></div>
-        </div>
+        <div class="play-zone">
+          <div class="play-zone-title">本轮出牌区</div>
 
-        <div class="player-mini me-card">
-          <div id="landlord0"></div>
-          <div class="player-head">
-            <div class="player-name">你</div>
-            <div class="player-count" id="myCount">剩余 17 张</div>
-            <div id="meTurn"></div>
+          <div class="played-grid">
+            <div class="played-slot">
+              <div class="played-slot-title">电脑1</div>
+              <div class="played-cards" id="playedLeft"></div>
+            </div>
+
+            <div class="played-slot">
+              <div class="played-slot-title">你</div>
+              <div class="played-cards" id="playedMid"></div>
+            </div>
+
+            <div class="played-slot">
+              <div class="played-slot-title">电脑2</div>
+              <div class="played-cards" id="playedRight"></div>
+            </div>
           </div>
-          <div class="play-type" id="playTypeText">牌型：--</div>
         </div>
       </div>
 
-      <div class="play-zone">
-        <div class="play-zone-title">本轮出牌区</div>
-
-        <div class="played-grid">
-          <div class="played-slot">
-            <div class="played-slot-title">电脑1</div>
-            <div class="played-cards" id="playedLeft"></div>
-          </div>
-
-          <div class="played-slot">
-            <div class="played-slot-title">你</div>
-            <div class="played-cards" id="playedMid"></div>
-          </div>
-
-          <div class="played-slot">
-            <div class="played-slot-title">电脑2</div>
-            <div class="played-cards" id="playedRight"></div>
-          </div>
+      <div class="rob-panel" id="robPanel">
+        <div class="rob-title">抢地主阶段</div>
+        <div class="rob-tip" id="robTip">
+          现在轮到你决定要不要抢地主。抢了就拿 3 张底牌，地主先出。<br>
+          不抢的话就交给 AI 继续抢。牌桌不等人。
+        </div>
+        <div class="rob-actions">
+          <button class="rob-btn btn-rob" id="btnRob">抢地主</button>
+          <button class="rob-btn btn-no-rob" id="btnNoRob">不抢</button>
         </div>
       </div>
+
+      <div class="hand-wrap">
+        <div class="hand-title">你的手牌</div>
+        <div class="hand-area" id="handArea"></div>
+      </div>
+
+      <div class="controls">
+        <button class="action btn-start" id="btnStart">开始游戏</button>
+        <button class="action btn-play" id="btnPlay">出牌</button>
+        <button class="action btn-pass" id="btnPass">过牌</button>
+        <button class="action btn-refresh" id="btnRefresh">刷新</button>
+        <button class="action btn-audio" id="btnBgmToggle">BGM开</button>
+        <button class="action btn-audio" id="btnSfxToggle">音效开</button>
+      </div>
+
+      <button class="log-toggle" id="logToggle">日志</button>
+      <div class="log" id="log"></div>
+
+      <audio id="bgmAudio" src="./【P2】💣欢乐斗基米💣(修复版).mp3" loop preload="auto"></audio>
+      <audio id="loseAudio" src="./失败搞笑：斗地主失败_爱给网_aigei_com.mp3" preload="auto"></audio>
+      <audio id="winAudio" src="./斗地主赢牌的声音__爱给网_aigei_com.mp3" preload="auto"></audio>
     </div>
-
-    <div class="hand-wrap">
-      <div class="hand-area" id="handArea"></div>
-    </div>
-
-    <div class="controls">
-      <button class="btn-start" id="btnStart">开始游戏</button>
-      <button class="btn-play" id="btnPlay">出牌</button>
-      <button class="btn-pass" id="btnPass">过牌</button>
-      <button class="btn-refresh" id="btnRefresh">刷新</button>
-      <button class="btn-audio" id="btnBgmToggle">BGM开</button>
-      <button class="btn-audio" id="btnSfxToggle">音效开</button>
-    </div>
-
-    <button class="log-toggle" id="logToggle">日志</button>
-    <div class="log" id="log"></div>
-
-    <audio id="bgmAudio" src="./【P2】💣欢乐斗基米💣(修复版).mp3" loop preload="auto"></audio>
-    <audio id="loseAudio" src="./失败搞笑：斗地主失败_爱给网_aigei_com.mp3" preload="auto"></audio>
-    <audio id="winAudio" src="./斗地主赢牌的声音__爱给网_aigei_com.mp3" preload="auto"></audio>
   </div>
 
   <script src="./game.js"></script>
@@ -626,6 +729,7 @@
     const handArea = document.getElementById("handArea");
     const logBox = document.getElementById("log");
     const logToggle = document.getElementById("logToggle");
+    const robPanel = document.getElementById("robPanel");
 
     const bgmAudio = document.getElementById("bgmAudio");
     const loseAudio = document.getElementById("loseAudio");
@@ -762,9 +866,7 @@
 
       target.innerHTML = "";
 
-      if (!text || text === "过牌") {
-        return;
-      }
+      if (!text || text === "过牌") return;
 
       const cards = splitCards(text);
       if (!cards.length) return;
@@ -777,22 +879,57 @@
       });
     }
 
+    function renderBottomCards(state) {
+      const box = document.getElementById("bottomCards");
+      box.innerHTML = "";
+
+      if (!state || !state.landlordCards || !state.landlordCards.length) return;
+
+      state.landlordCards.forEach(card => {
+        const div = document.createElement("div");
+        div.className = "mini-card";
+        div.textContent = card;
+        box.appendChild(div);
+      });
+    }
+
+    function renderPhase(state) {
+      const phaseText = document.getElementById("phaseText");
+
+      if (!state) {
+        phaseText.textContent = "阶段：未开始";
+        robPanel.classList.remove("show");
+        return;
+      }
+
+      if (!state.landlordRobbed) {
+        phaseText.textContent = `阶段：抢地主（当前：${playerName(state.currentPlayer)}）`;
+        robPanel.classList.toggle("show", state.currentPlayer === 0 && !state.gameOver);
+      } else {
+        phaseText.textContent = `阶段：出牌（地主：${playerName(state.landlordIndex)}）`;
+        robPanel.classList.remove("show");
+      }
+    }
+
     function renderStatus(state) {
       document.getElementById("myCount").textContent = `剩余 ${state.myCardCount} 张`;
       document.getElementById("ai1Count").textContent = `剩余 ${state.ai1CardCount} 张`;
       document.getElementById("ai2Count").textContent = `剩余 ${state.ai2CardCount} 张`;
 
-      setTurn("meTurn", state.currentPlayer === 0);
-      setTurn("ai1Turn", state.currentPlayer === 1);
-      setTurn("ai2Turn", state.currentPlayer === 2);
+      setTurn("meTurn", state.currentPlayer === 0 && state.landlordRobbed);
+      setTurn("ai1Turn", state.currentPlayer === 1 && state.landlordRobbed);
+      setTurn("ai2Turn", state.currentPlayer === 2 && state.landlordRobbed);
 
       setLandlord(state.landlordIndex);
       renderBackCards("ai1Backs", state.ai1CardCount);
       renderBackCards("ai2Backs", state.ai2CardCount);
+      renderBottomCards(state);
+      renderPhase(state);
 
       document.getElementById("roundText").textContent = `回合：${state.gameRound}`;
       document.getElementById("turnText").textContent = `当前轮到：${playerName(state.currentPlayer)}`;
-      document.getElementById("stateText").textContent = `游戏状态：${state.gameOver ? "已结束" : "进行中"}`;
+      document.getElementById("stateText").textContent =
+        `游戏状态：${state.gameOver ? "已结束" : (state.landlordRobbed ? "进行中" : "抢地主中")}`;
       document.getElementById("playTypeText").textContent = `牌型：${playTypeName(state.lastPlayType)}`;
 
       if (state.lastPlayer === -1 || state.lastPlayType === 0) {
@@ -806,8 +943,8 @@
       if (window.innerWidth >= 769) {
         return {
           cardWidth: 60,
-          baseTop: 28,
-          selectedTop: 6,
+          baseTop: 40,
+          selectedTop: 12,
           maxOverlap: 34,
           minOverlap: 18
         };
@@ -818,7 +955,7 @@
         baseTop: 34,
         selectedTop: 8,
         maxOverlap: 22,
-        minOverlap: 10
+        minOverlap: 8
       };
     }
 
@@ -847,15 +984,19 @@
 
       state.hand.forEach((cardName, index) => {
         const div = document.createElement("div");
+        const canSelect = state.landlordRobbed && state.currentPlayer === 0 && !state.gameOver;
+
         div.className = "my-card" + (selectedIndices.has(index) ? " selected" : "");
         div.style.left = (startLeft + index * overlap) + "px";
         div.style.top = selectedIndices.has(index)
           ? metrics.selectedTop + "px"
           : metrics.baseTop + "px";
         div.textContent = cardName;
+        div.style.cursor = canSelect ? "pointer" : "default";
+        div.style.opacity = canSelect ? "1" : "0.96";
 
         div.onclick = () => {
-          if (!gameState || gameState.currentPlayer !== 0 || gameState.gameOver) return;
+          if (!canSelect) return;
 
           if (selectedIndices.has(index)) selectedIndices.delete(index);
           else selectedIndices.add(index);
@@ -888,11 +1029,19 @@
       else if (before.currentPlayer === 2) actor = "电脑2";
       if (!actor) return null;
 
+      if (!before.landlordRobbed && after.landlordRobbed) {
+        return `${playerName(after.landlordIndex)} 抢到了地主。`;
+      }
+
       if (after.lastPlayer === before.currentPlayer) {
         return `${actor} 出了：${after.lastPlayedText || "未知牌面"}（${playTypeName(after.lastPlayType)}）`;
       }
 
-      return `${actor} 过牌。`;
+      if (after.landlordRobbed) {
+        return `${actor} 过牌。`;
+      }
+
+      return null;
     }
 
     function sleep(ms) {
@@ -912,9 +1061,41 @@
       }
     }
 
+    async function runAiRobIfNeeded() {
+      if (!gameState || gameState.landlordRobbed || gameState.currentPlayer === 0) return;
+
+      while (!gameState.landlordRobbed && gameState.currentPlayer !== 0 && !gameState.gameOver) {
+        const actor = gameState.currentPlayer;
+        appendLog(`${playerName(actor)} 正在决定是否抢地主...`);
+        await sleep(500);
+
+        if (typeof wasmModule._ai_rob_landlord !== "function") {
+          appendLog("错误：WASM 没导出 ai_rob_landlord，前端调不到。");
+          return;
+        }
+
+        wasmModule._ai_rob_landlord(actor);
+        renderAll();
+
+        if (gameState.landlordRobbed) {
+          appendLog(`${playerName(gameState.landlordIndex)} 抢地主成功。`);
+          break;
+        } else {
+          const next = (actor + 1) % 3;
+          gameState.currentPlayer = next;
+          renderStatus(gameState);
+        }
+
+        if (next === 0 && !gameState.landlordRobbed) {
+          appendLog("轮到你决定是否抢地主。");
+          break;
+        }
+      }
+    }
+
     async function autoRunAI() {
       let guard = 0;
-      while (!gameState.gameOver && gameState.currentPlayer !== 0 && guard < 50) {
+      while (!gameState.gameOver && gameState.landlordRobbed && gameState.currentPlayer !== 0 && guard < 50) {
         const before = JSON.parse(JSON.stringify(gameState));
 
         wasmModule._game_ai_step();
@@ -959,23 +1140,73 @@
       renderAll();
       appendLog("新游戏开始。");
 
-      if (gameState.landlordIndex >= 0) {
-        appendLog(`${playerName(gameState.landlordIndex)} 是地主。`);
+      if (!gameState.landlordRobbed) {
+        appendLog("进入抢地主阶段。");
       }
 
-      if (gameState.currentPlayer !== 0 && !gameState.gameOver) {
+      if (gameState.currentPlayer !== 0 && !gameState.landlordRobbed) {
+        await runAiRobIfNeeded();
+      }
+
+      if (gameState.landlordRobbed && gameState.currentPlayer !== 0 && !gameState.gameOver) {
         appendLog(`${playerName(gameState.currentPlayer)} 先手，自动运行中。`);
         await autoRunAI();
       }
 
       if (gameState.currentPlayer === 0 && !gameState.gameOver) {
-        appendLog("轮到你了。");
+        appendLog(gameState.landlordRobbed ? "轮到你出牌了。" : "轮到你决定是否抢地主。");
+      }
+    }
+
+    async function robLandlord() {
+      if (!gameState) return appendLog("请先开始游戏。");
+      if (gameState.gameOver) return appendLog("游戏已经结束。");
+      if (gameState.landlordRobbed) return appendLog("地主已经确定了。");
+      if (gameState.currentPlayer !== 0) return appendLog("现在不是你抢地主。");
+
+      if (typeof wasmModule._rob_landlord !== "function") {
+        return appendLog("错误：WASM 没导出 rob_landlord，前端调不到。");
+      }
+
+      wasmModule._rob_landlord(0);
+      renderAll();
+      appendLog("你选择了抢地主。");
+
+      if (gameState.landlordRobbed) {
+        appendLog("你成为地主，拿到底牌，准备出牌。");
+      }
+
+      if (gameState.currentPlayer !== 0 && !gameState.gameOver) {
+        await autoRunAI();
+      }
+    }
+
+    async function noRobLandlord() {
+      if (!gameState) return appendLog("请先开始游戏。");
+      if (gameState.gameOver) return appendLog("游戏已经结束。");
+      if (gameState.landlordRobbed) return appendLog("地主已经确定了。");
+      if (gameState.currentPlayer !== 0) return appendLog("现在不是你决定。");
+
+      appendLog("你选择了不抢。");
+      gameState.currentPlayer = 1;
+      renderStatus(gameState);
+
+      await runAiRobIfNeeded();
+
+      if (gameState.landlordRobbed && gameState.currentPlayer !== 0 && !gameState.gameOver) {
+        appendLog(`${playerName(gameState.currentPlayer)} 先手，自动运行中。`);
+        await autoRunAI();
+      }
+
+      if (gameState.currentPlayer === 0 && !gameState.gameOver) {
+        appendLog(gameState.landlordRobbed ? "轮到你出牌了。" : "轮到你决定是否抢地主。");
       }
     }
 
     async function playSelected() {
       if (!gameState) return appendLog("请先开始游戏。");
       if (gameState.gameOver) return appendLog("游戏已经结束。");
+      if (!gameState.landlordRobbed) return appendLog("还在抢地主，先别急着出牌。");
       if (gameState.currentPlayer !== 0) return appendLog("还没轮到你。");
 
       const selected = Array.from(selectedIndices).sort((a, b) => a - b);
@@ -1007,6 +1238,7 @@
     async function passTurn() {
       if (!gameState) return appendLog("请先开始游戏。");
       if (gameState.gameOver) return appendLog("游戏已经结束。");
+      if (!gameState.landlordRobbed) return appendLog("还在抢地主阶段，不能过牌。");
       if (gameState.currentPlayer !== 0) return appendLog("还没轮到你过牌。");
 
       const result = wasmModule._game_pass();
@@ -1039,6 +1271,9 @@
         renderAll();
         appendLog("界面已刷新。");
       };
+
+      document.getElementById("btnRob").onclick = () => robLandlord();
+      document.getElementById("btnNoRob").onclick = () => noRobLandlord();
 
       document.getElementById("btnBgmToggle").onclick = () => {
         bgmEnabled = !bgmEnabled;
