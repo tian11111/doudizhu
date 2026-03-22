@@ -5,14 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>斗地主</title>
   <style>
+    :root {
+      --bg-1: #184d2f;
+      --bg-2: #226c42;
+      --bg-3: #2f8c56;
+      --panel: rgba(6, 22, 14, 0.28);
+      --panel-border: rgba(255,255,255,.12);
+      --text: #eefbf4;
+      --muted: #d7efe1;
+      --accent: #facc15;
+      --danger: #dc2626;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --gray: #6b7280;
+      --card-shadow: 0 10px 18px rgba(0,0,0,.24);
+    }
+
     * { box-sizing: border-box; }
+
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
       font-family: "Microsoft YaHei", sans-serif;
-      background: #1d5d3a;
+      background: var(--bg-1);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    body.mobile-ui {
+      overflow: auto;
+      background:
+        radial-gradient(circle at top, #2f8c56 0%, #226c42 50%, #184d2f 100%);
     }
 
     .table {
@@ -20,83 +44,157 @@
       width: 100vw;
       height: 100vh;
       background:
-        radial-gradient(circle at center, #2f8c56 0%, #226c42 45%, #184d2f 100%);
+        radial-gradient(circle at center, var(--bg-3) 0%, var(--bg-2) 45%, var(--bg-1) 100%);
+      overflow: hidden;
+    }
+
+    body.mobile-ui .table {
+      min-height: 100vh;
+      height: auto;
+      overflow: visible;
+      padding-bottom: 170px;
+    }
+
+    .table::before {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,.06);
+      pointer-events: none;
+    }
+
+    body.mobile-ui .table::before {
+      inset: 10px;
+      border-radius: 22px;
     }
 
     .title {
       position: absolute;
-      top: 12px;
+      top: 14px;
       left: 50%;
       transform: translateX(-50%);
-      color: #ffe7a6;
-      font-size: 30px;
-      font-weight: bold;
-      letter-spacing: 4px;
-      text-shadow: 0 3px 10px rgba(0,0,0,.35);
-      z-index: 10;
+      color: #ffe8ae;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 5px;
+      text-shadow: 0 4px 14px rgba(0,0,0,.35);
+      z-index: 20;
+      white-space: nowrap;
+    }
+
+    body.mobile-ui .title {
+      top: 10px;
+      font-size: 24px;
+      letter-spacing: 3px;
     }
 
     .player {
       position: absolute;
-      width: 150px;
-      color: #fff;
+      width: 158px;
       text-align: center;
-      z-index: 6;
+      z-index: 8;
     }
 
     .player-box {
       position: relative;
-      background: rgba(0,0,0,.22);
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
       padding: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.2);
-      backdrop-filter: blur(4px);
+      box-shadow: 0 10px 28px rgba(0,0,0,.22);
+      backdrop-filter: blur(6px);
     }
 
     .player-name {
       font-size: 20px;
-      font-weight: bold;
+      font-weight: 700;
       margin-bottom: 6px;
     }
 
     .player-count {
       font-size: 14px;
-      color: #e8fff2;
+      color: var(--muted);
     }
 
     .turn {
       margin-top: 8px;
       display: inline-block;
-      padding: 3px 10px;
+      padding: 4px 10px;
       border-radius: 999px;
-      background: #facc15;
-      color: #5e3c00;
+      background: var(--accent);
+      color: #5b3b00;
       font-size: 12px;
-      font-weight: bold;
+      font-weight: 700;
+      box-shadow: 0 4px 10px rgba(0,0,0,.15);
     }
 
     .landlord {
       position: absolute;
       top: -10px;
-      right: -6px;
-      background: #dc2626;
+      right: -8px;
+      background: linear-gradient(180deg, #ef4444, #b91c1c);
       color: #fff;
       border-radius: 999px;
       padding: 4px 10px;
       font-size: 12px;
-      font-weight: bold;
-      box-shadow: 0 4px 10px rgba(0,0,0,.22);
+      font-weight: 700;
+      box-shadow: 0 6px 14px rgba(0,0,0,.28);
+      z-index: 20;
     }
 
-    .ai-left { left: 24px; top: 100px; }
-    .ai-right { right: 24px; top: 100px; }
-    .me { left: 50%; bottom: 170px; transform: translateX(-50%); }
+    .ai-left { left: 26px; top: 94px; }
+    .ai-right { right: 26px; top: 94px; }
+    .me {
+      left: 50%;
+      bottom: 172px;
+      transform: translateX(-50%);
+      width: 170px;
+    }
+
+    body.mobile-ui .ai-left {
+      left: 10px;
+      top: 52px;
+      width: 104px;
+    }
+
+    body.mobile-ui .ai-right {
+      right: 10px;
+      top: 52px;
+      width: 104px;
+    }
+
+    body.mobile-ui .me {
+      left: 50%;
+      top: 118px;
+      bottom: auto;
+      width: 126px;
+      transform: translateX(-50%);
+    }
+
+    body.mobile-ui .player-box {
+      border-radius: 16px;
+      padding: 8px;
+    }
+
+    body.mobile-ui .player-name {
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    body.mobile-ui .player-count {
+      font-size: 12px;
+    }
 
     .ai-back-area {
       margin-top: 12px;
-      height: 92px;
+      height: 90px;
       position: relative;
+    }
+
+    body.mobile-ui .ai-back-area {
+      margin-top: 8px;
+      height: 62px;
     }
 
     .back-card {
@@ -104,9 +202,9 @@
       width: 48px;
       height: 68px;
       border-radius: 10px;
-      border: 1px solid #d6d6d6;
+      border: 1px solid rgba(255,255,255,.35);
       background:
-        linear-gradient(135deg, #c1121f 0%, #ef4444 50%, #991b1b 100%);
+        linear-gradient(135deg, #991b1b 0%, #dc2626 48%, #7f1d1d 100%);
       box-shadow: 0 6px 12px rgba(0,0,0,.22);
     }
 
@@ -117,40 +215,70 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: rgba(255,255,255,.9);
+      color: rgba(255,255,255,.92);
       font-size: 22px;
       font-weight: bold;
+    }
+
+    body.mobile-ui .back-card {
+      width: 30px;
+      height: 44px;
+      border-radius: 8px;
+    }
+
+    body.mobile-ui .back-card::after {
+      font-size: 14px;
     }
 
     .center-zone {
       position: absolute;
       left: 50%;
-      top: 46%;
+      top: 45%;
       transform: translate(-50%, -50%);
-      width: 760px;
-      max-width: 92vw;
-      z-index: 5;
+      width: min(760px, 92vw);
+      z-index: 7;
+    }
+
+    body.mobile-ui .center-zone {
+      position: relative;
+      left: auto;
+      top: auto;
+      transform: none;
+      width: calc(100vw - 16px);
+      margin: 210px auto 0;
     }
 
     .desk-info {
       text-align: center;
-      color: #f8fafc;
+      color: #f2fff8;
       margin-bottom: 12px;
       font-size: 15px;
       display: flex;
       justify-content: center;
-      gap: 18px;
+      gap: 16px;
       flex-wrap: wrap;
+      text-shadow: 0 2px 6px rgba(0,0,0,.15);
+    }
+
+    body.mobile-ui .desk-info {
+      font-size: 12px;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     .play-stage {
       position: relative;
-      height: 220px;
-      background: rgba(0,0,0,.18);
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 22px;
-      box-shadow: 0 10px 26px rgba(0,0,0,.18);
+      height: 228px;
+      background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.26));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 24px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.22);
       overflow: hidden;
+    }
+
+    body.mobile-ui .play-stage {
+      height: 180px;
+      border-radius: 18px;
     }
 
     .last-label {
@@ -158,8 +286,14 @@
       top: 12px;
       left: 50%;
       transform: translateX(-50%);
-      color: #d1fae5;
+      color: #d4fae7;
       font-size: 15px;
+      font-weight: 600;
+    }
+
+    body.mobile-ui .last-label {
+      font-size: 13px;
+      top: 10px;
     }
 
     .played-group {
@@ -170,11 +304,34 @@
       justify-content: center;
       min-height: 84px;
       transition: all .25s ease;
+      flex-wrap: wrap;
+      max-width: 220px;
     }
 
-    .played-left  { left: 60px; top: 70px; }
-    .played-right { right: 60px; top: 70px; }
-    .played-mid   { left: 50%; top: 100px; transform: translateX(-50%); }
+    .played-left  { left: 40px; top: 70px; }
+    .played-right { right: 40px; top: 70px; }
+    .played-mid   { left: 50%; top: 100px; transform: translateX(-50%); max-width: 320px; }
+
+    body.mobile-ui .played-left {
+      left: 10px;
+      top: 54px;
+      max-width: 92px;
+      gap: 4px;
+    }
+
+    body.mobile-ui .played-right {
+      right: 10px;
+      top: 54px;
+      max-width: 92px;
+      gap: 4px;
+    }
+
+    body.mobile-ui .played-mid {
+      left: 50%;
+      top: 102px;
+      max-width: 160px;
+      gap: 5px;
+    }
 
     .played-title {
       position: absolute;
@@ -183,7 +340,12 @@
       text-align: center;
       color: #fde68a;
       font-size: 14px;
-      font-weight: bold;
+      font-weight: 700;
+    }
+
+    body.mobile-ui .played-title {
+      font-size: 12px;
+      top: -18px;
     }
 
     .show-card {
@@ -191,18 +353,28 @@
       height: 82px;
       border-radius: 10px;
       border: 1px solid #d1d5db;
-      background: linear-gradient(180deg, #fff, #f3f4f6);
+      background: linear-gradient(180deg, #fff 0%, #f3f4f6 100%);
       color: #111827;
-      font-weight: bold;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 14px rgba(0,0,0,.22);
+      padding: 4px;
+      text-align: center;
+      box-shadow: var(--card-shadow);
       animation: popIn .22s ease;
     }
 
+    body.mobile-ui .show-card {
+      width: 36px;
+      height: 52px;
+      border-radius: 8px;
+      font-size: 11px;
+      box-shadow: 0 6px 12px rgba(0,0,0,.22);
+    }
+
     @keyframes popIn {
-      from { opacity: 0; transform: translateY(16px) scale(.9); }
+      from { opacity: 0; transform: translateY(14px) scale(.92); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
@@ -213,17 +385,29 @@
       transform: translateX(-50%);
       color: #dbeafe;
       font-size: 14px;
+      white-space: nowrap;
+    }
+
+    body.mobile-ui .play-type {
+      bottom: 10px;
+      font-size: 12px;
     }
 
     .my-hand-wrap {
       position: absolute;
       left: 50%;
-      bottom: 72px;
+      bottom: 76px;
       transform: translateX(-50%);
-      width: calc(100vw - 80px);
+      width: calc(100vw - 76px);
       max-width: 1100px;
-      height: 150px;
-      z-index: 7;
+      height: 158px;
+      z-index: 9;
+    }
+
+    body.mobile-ui .my-hand-wrap {
+      width: calc(100vw - 8px);
+      bottom: 72px;
+      height: 122px;
     }
 
     .hand-area {
@@ -236,32 +420,43 @@
       position: absolute;
       width: 60px;
       height: 86px;
-      border-radius: 10px;
-      background: linear-gradient(180deg, #ffffff, #f3f4f6);
+      border-radius: 12px;
+      background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
       border: 1px solid #d1d5db;
-      box-shadow: 0 8px 14px rgba(0,0,0,.22);
+      box-shadow: var(--card-shadow);
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 6px;
       text-align: center;
       font-size: 15px;
-      font-weight: bold;
+      font-weight: 700;
       color: #111827;
       cursor: pointer;
       user-select: none;
-      transition: top .15s ease, transform .15s ease, box-shadow .15s ease;
+      transition: top .16s ease, transform .16s ease, box-shadow .16s ease, border-color .16s ease;
     }
 
     .my-card:hover {
-      transform: translateY(-6px);
+      transform: translateY(-4px);
     }
 
     .my-card.selected {
-      top: 6px !important;
       border: 2px solid #3b82f6;
-      background: linear-gradient(180deg, #eff6ff, #dbeafe);
-      box-shadow: 0 12px 18px rgba(0,0,0,.28);
+      background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+      box-shadow: 0 14px 20px rgba(0,0,0,.28);
+    }
+
+    body.mobile-ui .my-card {
+      width: 42px;
+      height: 62px;
+      border-radius: 9px;
+      font-size: 11px;
+      padding: 4px;
+    }
+
+    body.mobile-ui .my-card:hover {
+      transform: none;
     }
 
     .actions {
@@ -271,7 +466,15 @@
       transform: translateX(-50%);
       display: flex;
       gap: 12px;
-      z-index: 9;
+      z-index: 12;
+    }
+
+    body.mobile-ui .actions {
+      width: calc(100vw - 16px);
+      bottom: 12px;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     button {
@@ -279,32 +482,101 @@
       border-radius: 999px;
       padding: 10px 24px;
       font-size: 15px;
-      font-weight: bold;
+      font-weight: 700;
       color: #fff;
-      background: #2563eb;
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
       cursor: pointer;
       box-shadow: 0 8px 18px rgba(0,0,0,.2);
+      transition: transform .12s ease, filter .12s ease;
     }
 
-    button.success { background: #16a34a; }
-    button.secondary { background: #6b7280; }
+    button:hover { filter: brightness(1.06); }
+    button:active { transform: translateY(1px); }
+
+    button.success {
+      background: linear-gradient(180deg, #22c55e, #16a34a);
+    }
+
+    button.secondary {
+      background: linear-gradient(180deg, #818892, #6b7280);
+    }
+
+    body.mobile-ui button {
+      padding: 8px 16px;
+      font-size: 13px;
+      min-width: 78px;
+    }
+
+    .log-toggle {
+      display: none;
+    }
 
     .log {
       position: absolute;
       left: 16px;
       bottom: 16px;
-      width: 300px;
-      max-height: 180px;
+      width: 312px;
+      max-height: 188px;
       overflow-y: auto;
-      background: rgba(0,0,0,.3);
-      color: #eef2ff;
-      border-radius: 14px;
+      background: rgba(0,0,0,.32);
+      color: #eefdf4;
+      border-radius: 16px;
       padding: 12px;
       font-size: 13px;
       line-height: 1.55;
       border: 1px solid rgba(255,255,255,.12);
-      z-index: 9;
+      z-index: 11;
       white-space: pre-wrap;
+      backdrop-filter: blur(4px);
+    }
+
+    body.mobile-ui .log-toggle {
+      display: block;
+      position: fixed;
+      left: 10px;
+      bottom: 12px;
+      z-index: 20;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.38);
+      color: #fff;
+      backdrop-filter: blur(4px);
+    }
+
+    body.mobile-ui .log {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 58px;
+      width: auto;
+      max-height: 160px;
+      display: none;
+      font-size: 12px;
+      border-radius: 14px;
+    }
+
+    body.mobile-ui.show-log .log {
+      display: block;
+    }
+
+    .hint-chip {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      z-index: 11;
+      background: rgba(255,255,255,.08);
+      color: #f1fff7;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(4px);
+    }
+
+    body.mobile-ui .hint-chip {
+      display: none;
     }
   </style>
 </head>
@@ -378,7 +650,9 @@
       <button class="secondary" id="btnRefresh">刷新</button>
     </div>
 
+    <button class="log-toggle" id="logToggle">日志</button>
     <div class="log" id="log"></div>
+    <div class="hint-chip">手机端已自动适配</div>
   </div>
 
   <script src="./game.js"></script>
@@ -390,6 +664,20 @@
 
     const handArea = document.getElementById("handArea");
     const logBox = document.getElementById("log");
+    const logToggle = document.getElementById("logToggle");
+
+    function isMobileLike() {
+      const ua = navigator.userAgent.toLowerCase();
+      const mobileUA = /android|iphone|ipad|ipod|mobile|windows phone|harmonyos/i.test(ua);
+      const smallScreen = window.innerWidth <= 768;
+      const touchDevice = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+      return mobileUA || (smallScreen && touchDevice);
+    }
+
+    function applyDeviceMode() {
+      document.body.classList.remove("mobile-ui", "desktop-ui");
+      document.body.classList.add(isMobileLike() ? "mobile-ui" : "desktop-ui");
+    }
 
     function appendLog(text) {
       const time = new Date().toLocaleTimeString();
@@ -416,6 +704,35 @@
       return map[type] || "未知";
     }
 
+    function getCardMetrics() {
+      if (document.body.classList.contains("mobile-ui")) {
+        return {
+          cardWidth: 42,
+          baseTop: 34,
+          selectedTop: 8,
+          maxOverlap: 22,
+          minOverlap: 9
+        };
+      }
+      return {
+        cardWidth: 60,
+        baseTop: 28,
+        selectedTop: 6,
+        maxOverlap: 34,
+        minOverlap: 18
+      };
+    }
+
+    function clearPlayedAreas() {
+      const ids = ["playedLeft", "playedRight", "playedMid"];
+      ids.forEach(id => {
+        const area = document.getElementById(id);
+        const title = area.querySelector(".played-title");
+        area.innerHTML = "";
+        if (title) area.appendChild(title);
+      });
+    }
+
     function getState() {
       const ptr = wasmModule._game_get_state_json();
       return JSON.parse(wasmModule.UTF8ToString(ptr));
@@ -433,20 +750,21 @@
 
     function setLandlord(index) {
       for (let i = 0; i < 3; i++) {
-        document.getElementById(`landlord${i}`).innerHTML = i === index
-          ? '<span class="landlord">地主</span>'
-          : '';
+        const el = document.getElementById(`landlord${i}`);
+        if (!el) continue;
+        el.innerHTML = i === index ? '<span class="landlord">地主</span>' : '';
       }
     }
 
     function renderBackCards(containerId, count) {
       const box = document.getElementById(containerId);
       box.innerHTML = "";
-      const showCount = Math.min(count, 10);
+      const showCount = Math.min(count, document.body.classList.contains("mobile-ui") ? 7 : 10);
+      const step = document.body.classList.contains("mobile-ui") ? 5 : 8;
       for (let i = 0; i < showCount; i++) {
         const div = document.createElement("div");
         div.className = "back-card";
-        div.style.left = (i * 8) + "px";
+        div.style.left = (i * step) + "px";
         div.style.top = (i % 2) + "px";
         box.appendChild(div);
       }
@@ -459,35 +777,31 @@
 
     function renderPlayedArea(playerIndex, text) {
       const groups = {
-      0: document.getElementById("playedMid"),
-      1: document.getElementById("playedLeft"),
-      2: document.getElementById("playedRight")
-    };
+        0: document.getElementById("playedMid"),
+        1: document.getElementById("playedLeft"),
+        2: document.getElementById("playedRight")
+      };
 
-    if (playerIndex < 0 || groups[playerIndex] == null) return;
+      if (playerIndex < 0 || groups[playerIndex] == null) return;
 
-    const target = groups[playerIndex];
-    const title = target.querySelector(".played-title");
+      const target = groups[playerIndex];
+      const title = target.querySelector(".played-title");
 
-    // 先清空这个玩家自己的出牌区
-    target.innerHTML = "";
-    target.appendChild(title);
+      target.innerHTML = "";
+      if (title) target.appendChild(title);
 
-    // 如果是过牌，就清空后直接返回
-    if (!text || text === "过牌") {
-      return;
+      if (!text || text === "过牌") return;
+
+      const cards = splitCards(text);
+      if (!cards.length) return;
+
+      cards.forEach(card => {
+        const div = document.createElement("div");
+        div.className = "show-card";
+        div.textContent = card;
+        target.appendChild(div);
+      });
     }
-
-    const cards = splitCards(text);
-    if (!cards.length) return;
-
-    cards.forEach(card => {
-      const div = document.createElement("div");
-      div.className = "show-card";
-      div.textContent = card;
-      target.appendChild(div);
-    });
-  }
 
     function renderStatus(state) {
       document.getElementById("myCount").textContent = `剩余 ${state.myCardCount} 张`;
@@ -499,7 +813,6 @@
       setTurn("ai2Turn", state.currentPlayer === 2);
 
       setLandlord(state.landlordIndex);
-
       renderBackCards("ai1Backs", state.ai1CardCount);
       renderBackCards("ai2Backs", state.ai2CardCount);
 
@@ -508,15 +821,27 @@
       document.getElementById("stateText").textContent = `游戏状态：${state.gameOver ? "已结束" : "进行中"}`;
       document.getElementById("playTypeText").textContent = `牌型：${playTypeName(state.lastPlayType)}`;
 
-      renderPlayedArea(state.lastPlayer, state.lastPlayedText);
+      if (state.lastPlayer === -1 || state.lastPlayType === 0) {
+        clearPlayedAreas();
+      } else {
+        renderPlayedArea(state.lastPlayer, state.lastPlayedText);
+      }
     }
 
     function renderHand(state) {
       handArea.innerHTML = "";
       if (!state.hand || !state.hand.length) return;
 
-      const cardWidth = 60;
-      const overlap = Math.min(34, Math.max(18, Math.floor((handArea.clientWidth - cardWidth) / Math.max(1, state.hand.length - 1))));
+      const metrics = getCardMetrics();
+      const cardWidth = metrics.cardWidth;
+      const overlap = Math.min(
+        metrics.maxOverlap,
+        Math.max(
+          metrics.minOverlap,
+          Math.floor((handArea.clientWidth - cardWidth) / Math.max(1, state.hand.length - 1))
+        )
+      );
+
       const totalWidth = cardWidth + overlap * (state.hand.length - 1);
       const startLeft = Math.max(0, Math.floor((handArea.clientWidth - totalWidth) / 2));
 
@@ -530,14 +855,18 @@
         const div = document.createElement("div");
         div.className = "my-card" + (selectedIndices.has(index) ? " selected" : "");
         div.style.left = (startLeft + index * overlap) + "px";
-        div.style.top = selectedIndices.has(index) ? "6px" : "28px";
+        div.style.top = selectedIndices.has(index)
+          ? metrics.selectedTop + "px"
+          : metrics.baseTop + "px";
         div.textContent = cardName;
+
         div.onclick = () => {
           if (!gameState || gameState.currentPlayer !== 0 || gameState.gameOver) return;
           if (selectedIndices.has(index)) selectedIndices.delete(index);
           else selectedIndices.add(index);
           renderHand(gameState);
         };
+
         handArea.appendChild(div);
       });
     }
@@ -568,7 +897,11 @@
       return `${actor} 过牌。`;
     }
 
-    function autoRunAI() {
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function autoRunAI() {
       let guard = 0;
       while (!gameState.gameOver && gameState.currentPlayer !== 0 && guard < 50) {
         const before = JSON.parse(JSON.stringify(gameState));
@@ -580,18 +913,30 @@
         const msg = describeAIAction(before, gameState);
         if (msg) appendLog(msg);
 
+        if (before.currentPlayer === 1 || before.currentPlayer === 2) {
+          if (gameState.lastPlayer === before.currentPlayer) {
+            renderPlayedArea(before.currentPlayer, gameState.lastPlayedText);
+          } else {
+            renderPlayedArea(before.currentPlayer, "过牌");
+          }
+        }
+
         guard++;
+        await sleep(document.body.classList.contains("mobile-ui") ? 520 : 680);
       }
     }
 
-    function startGame() {
+    async function startGame() {
       if (!wasmModule) {
         appendLog("WASM 模块还没加载好。");
         return;
       }
+
       wasmModule._game_init();
       selectedIndices.clear();
       prevState = null;
+      clearPlayedAreas();
+
       renderAll();
       appendLog("新游戏开始。");
 
@@ -601,7 +946,7 @@
 
       if (gameState.currentPlayer !== 0 && !gameState.gameOver) {
         appendLog(`${playerName(gameState.currentPlayer)} 先手，自动运行中。`);
-        autoRunAI();
+        await autoRunAI();
       }
 
       if (gameState.currentPlayer === 0 && !gameState.gameOver) {
@@ -609,7 +954,7 @@
       }
     }
 
-    function playSelected() {
+    async function playSelected() {
       if (!gameState) return appendLog("请先开始游戏。");
       if (gameState.gameOver) return appendLog("游戏已经结束。");
       if (gameState.currentPlayer !== 0) return appendLog("还没轮到你。");
@@ -631,14 +976,14 @@
       appendLog(`你出了：${gameState.lastPlayedText || "未知牌面"}（${playTypeName(gameState.lastPlayType)}）`);
 
       if (!gameState.gameOver && gameState.currentPlayer !== 0) {
-        autoRunAI();
+        await autoRunAI();
       }
 
       if (gameState.gameOver) appendLog("游戏结束。");
       else if (gameState.currentPlayer === 0) appendLog("又轮到你了。");
     }
 
-    function passTurn() {
+    async function passTurn() {
       if (!gameState) return appendLog("请先开始游戏。");
       if (gameState.gameOver) return appendLog("游戏已经结束。");
       if (gameState.currentPlayer !== 0) return appendLog("还没轮到你过牌。");
@@ -651,10 +996,11 @@
 
       selectedIndices.clear();
       renderAll();
+      renderPlayedArea(0, "过牌");
       appendLog("你选择了过牌。");
 
       if (!gameState.gameOver && gameState.currentPlayer !== 0) {
-        autoRunAI();
+        await autoRunAI();
       }
 
       if (gameState.gameOver) appendLog("游戏结束。");
@@ -662,17 +1008,23 @@
     }
 
     function bindButtons() {
-      document.getElementById("btnStart").onclick = startGame;
-      document.getElementById("btnPlay").onclick = playSelected;
-      document.getElementById("btnPass").onclick = passTurn;
+      document.getElementById("btnStart").onclick = () => startGame();
+      document.getElementById("btnPlay").onclick = () => playSelected();
+      document.getElementById("btnPass").onclick = () => passTurn();
       document.getElementById("btnRefresh").onclick = () => {
         if (!wasmModule) return;
         renderAll();
         appendLog("界面已刷新。");
       };
+
+      logToggle.onclick = () => {
+        document.body.classList.toggle("show-log");
+      };
     }
 
     async function loadModule() {
+      applyDeviceMode();
+
       if (typeof GameModule === "function") {
         wasmModule = await GameModule();
       } else if (typeof Module !== "undefined") {
@@ -691,7 +1043,11 @@
     });
 
     window.addEventListener("resize", () => {
-      if (gameState) renderHand(gameState);
+      applyDeviceMode();
+      if (gameState) {
+        renderStatus(gameState);
+        renderHand(gameState);
+      }
     });
   </script>
 </body>
