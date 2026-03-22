@@ -74,20 +74,31 @@ int currentPlayer;
 bool gameOver;
 char lastPlayedText[256];
 int landlordIndex = -1;
+char buffer[4096];
 
 void clearLastPlayedText();
 void buildPlayedTextFromSelection(const Player* player, int selected[], int count);
 
-void clearLastPlayedText() {
-    lastPlayedText[0] = '\0';
-}
-
-void buildPlayedTextFromSelection(const Player* player, int selected[], int count) {
-    clearLastPlayedText();
-    for (int i = 0; i < count; i++) {
-        if (i > 0) strcat(lastPlayedText, " ");
-        strcat(lastPlayedText, player->hand[selected[i]].name);
+void reset_all() {
+    // 清空三个玩家的所有数据
+    for (int i = 0; i < 3; i++) {
+        players[i].cardCount = 0;
+        players[i].isLandlord = false;
+        memset(players[i].hand, 0, sizeof(players[i].hand)); // 清空手牌
+        memset(players[i].name, 0, sizeof(players[i].name)); // 清空名字
     }
+    // 清空牌堆
+    memset(&gameDeck, 0, sizeof(Deck));
+    // 清空全局游戏状态
+    memset(&lastPlay, 0, sizeof(Play));
+    lastPlayer = -1;
+    passCount = 0;
+    gameRound = 1;
+    currentPlayer = 0;
+    gameOver = false;
+    landlordIndex = -1;
+    clearLastPlayedText();
+    memset(buffer, 0, sizeof(buffer));
 }
 
 // 初始化牌堆
@@ -355,6 +366,24 @@ bool canPlayBeat(const Play* current, const Play* last) {
     return false;
 }
 
+int check_play_valid(int selected[], int count) {
+    if (count <= 0) return 0; // 没选牌直接返回不能出
+
+    // 第一步：分析牌型是否合法
+    Play current_play = analyzePlay(&players[0], selected, count);
+    if (current_play.type == PASS) {
+        return 0; // 非法牌型
+    }
+
+    // 第二步：判断能否打过上家
+    if (!canPlayBeat(&current_play, &lastPlay)) {
+        return 0; // 打不过上家
+    }
+
+    return 1; // 合法且能出
+}
+
+
 int game_play(int selected[], int count) {
     Play currentPlay = analyzePlay(&players[0], selected, count);
 
@@ -402,7 +431,6 @@ int game_pass() {
     return 1;
 }
 
-char buffer[4096];
 
 const char* game_get_state_json() {
     int offset = 0;
@@ -428,11 +456,11 @@ const char* game_get_state_json() {
     offset += sprintf(buffer + offset, "\"ai1CardCount\":%d,", players[1].cardCount);
     offset += sprintf(buffer + offset, "\"ai2CardCount\":%d,", players[2].cardCount);
 
+    // 上一手牌型和具体牌面
     offset += sprintf(buffer + offset, "\"lastPlayType\":%d,", lastPlay.type);
     offset += sprintf(buffer + offset, "\"lastPlayedText\":\"%s\",", lastPlayedText);
     offset += sprintf(buffer + offset, "\"landlordIndex\":%d", landlordIndex);
-
-    offset += sprintf(buffer + offset, "}");  
+    offset += sprintf(buffer + offset, "}");    
 
     return buffer;
 }
@@ -562,6 +590,8 @@ else {
     return 1;
 }
 void game_init() {
+	reset_all();
+
     srand((unsigned)time(NULL));
 
     gameDeck.top = 0;
@@ -603,8 +633,25 @@ void game_auto_run() {
     }
 }
 
+void clearLastPlayedText() {
+    lastPlayedText[0] = '\0';
+}
+
+
+void buildPlayedTextFromSelection(const Player* player, int selected[], int count) {
+    clearLastPlayedText();
+
+    for (int i = 0; i < count; i++) {
+        if (i > 0) {
+            strcat(lastPlayedText, " ");
+        }
+        strcat(lastPlayedText, player->hand[selected[i]].name);
+    }
+}
+
 
 int main() {
     srand((unsigned)time(NULL));
     return 0;
 }
+
