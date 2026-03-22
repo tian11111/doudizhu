@@ -24,7 +24,10 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     html, body {
       margin: 0;
@@ -116,6 +119,7 @@
       min-height: auto;
       padding: 12px 10px;
       margin-top: 10px;
+      grid-column: span 2;
     }
 
     .player-head {
@@ -278,7 +282,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      bottom: calc(106px + var(--safe-bottom));
+      bottom: calc(136px + var(--safe-bottom));
       height: 138px;
       padding: 0 8px;
       z-index: 12;
@@ -324,15 +328,15 @@
       bottom: calc(10px + var(--safe-bottom));
       z-index: 20;
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
 
     button {
       border: none;
       border-radius: 18px;
-      padding: 12px 10px;
-      font-size: 15px;
+      padding: 11px 8px;
+      font-size: 13px;
       font-weight: 800;
       color: white;
       box-shadow: 0 8px 18px rgba(0,0,0,0.2);
@@ -347,14 +351,15 @@
     }
 
     .btn-pass,
-    .btn-refresh {
+    .btn-refresh,
+    .btn-audio {
       background: linear-gradient(180deg, #8b93a1, #6b7280);
     }
 
     .log-toggle {
       position: fixed;
       left: 10px;
-      bottom: calc(108px + var(--safe-bottom));
+      bottom: calc(140px + var(--safe-bottom));
       z-index: 21;
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 999px;
@@ -370,7 +375,7 @@
       position: fixed;
       left: 10px;
       right: 10px;
-      bottom: calc(160px + var(--safe-bottom));
+      bottom: calc(192px + var(--safe-bottom));
       max-height: 180px;
       overflow-y: auto;
       display: none;
@@ -390,19 +395,15 @@
       display: block;
     }
 
-    .pass-text {
-      font-size: 13px;
-      font-weight: 800;
-      color: rgba(255,255,255,0.92);
-    }
-
     @media (min-width: 769px) {
-      html, body { overflow: auto; }
+      html, body {
+        overflow: auto;
+      }
 
       .app {
         min-height: 100vh;
         height: auto;
-        padding-bottom: 230px;
+        padding-bottom: 250px;
       }
 
       .title {
@@ -423,6 +424,10 @@
       .ai-row {
         grid-template-columns: repeat(3, 1fr);
         gap: 14px;
+      }
+
+      .player-mini.me-card {
+        grid-column: span 1;
       }
 
       .player-mini,
@@ -486,7 +491,7 @@
         left: 50%;
         transform: translateX(-50%);
         width: min(1100px, calc(100vw - 24px));
-        bottom: 110px;
+        bottom: 130px;
         height: 160px;
       }
 
@@ -501,8 +506,8 @@
       .controls {
         left: 50%;
         transform: translateX(-50%);
-        width: min(580px, calc(100vw - 24px));
-        grid-template-columns: repeat(4, 1fr);
+        width: min(780px, calc(100vw - 24px));
+        grid-template-columns: repeat(6, 1fr);
         bottom: 18px;
       }
 
@@ -542,16 +547,6 @@
           <div class="back-area" id="ai1Backs"></div>
         </div>
 
-        <div class="player-mini me-card">
-          <div id="landlord0"></div>
-          <div class="player-head">
-            <div class="player-name">你</div>
-            <div class="player-count" id="myCount">剩余 17 张</div>
-            <div id="meTurn"></div>
-          </div>
-          <div class="play-type" id="playTypeText">牌型：--</div>
-        </div>
-
         <div class="player-mini">
           <div id="landlord2"></div>
           <div class="player-head">
@@ -560,6 +555,16 @@
             <div id="ai2Turn"></div>
           </div>
           <div class="back-area" id="ai2Backs"></div>
+        </div>
+
+        <div class="player-mini me-card">
+          <div id="landlord0"></div>
+          <div class="player-head">
+            <div class="player-name">你</div>
+            <div class="player-count" id="myCount">剩余 17 张</div>
+            <div id="meTurn"></div>
+          </div>
+          <div class="play-type" id="playTypeText">牌型：--</div>
         </div>
       </div>
 
@@ -594,10 +599,16 @@
       <button class="btn-play" id="btnPlay">出牌</button>
       <button class="btn-pass" id="btnPass">过牌</button>
       <button class="btn-refresh" id="btnRefresh">刷新</button>
+      <button class="btn-audio" id="btnBgmToggle">BGM开</button>
+      <button class="btn-audio" id="btnSfxToggle">音效开</button>
     </div>
 
     <button class="log-toggle" id="logToggle">日志</button>
     <div class="log" id="log"></div>
+
+    <audio id="bgmAudio" src="./【P2】💣欢乐斗基米💣(修复版).mp3" loop preload="auto"></audio>
+    <audio id="loseAudio" src="./失败搞笑：斗地主失败_爱给网_aigei_com.mp3" preload="auto"></audio>
+    <audio id="winAudio" src="./斗地主赢牌的声音__爱给网_aigei_com.mp3" preload="auto"></audio>
   </div>
 
   <script src="./game.js"></script>
@@ -607,9 +618,22 @@
     let prevState = null;
     let selectedIndices = new Set();
 
+    let bgmEnabled = true;
+    let sfxEnabled = true;
+    let audioUnlocked = false;
+    let endSoundPlayed = false;
+
     const handArea = document.getElementById("handArea");
     const logBox = document.getElementById("log");
     const logToggle = document.getElementById("logToggle");
+
+    const bgmAudio = document.getElementById("bgmAudio");
+    const loseAudio = document.getElementById("loseAudio");
+    const winAudio = document.getElementById("winAudio");
+
+    bgmAudio.volume = 0.35;
+    loseAudio.volume = 0.9;
+    winAudio.volume = 0.9;
 
     function appendLog(text) {
       const time = new Date().toLocaleTimeString();
@@ -634,6 +658,44 @@
         8: "王炸"
       };
       return map[type] || "未知";
+    }
+
+    function unlockAudio() {
+      audioUnlocked = true;
+    }
+
+    function updateAudioButtons() {
+      document.getElementById("btnBgmToggle").textContent = bgmEnabled ? "BGM开" : "BGM关";
+      document.getElementById("btnSfxToggle").textContent = sfxEnabled ? "音效开" : "音效关";
+    }
+
+    function stopAllSfx() {
+      [loseAudio, winAudio].forEach(a => {
+        a.pause();
+        a.currentTime = 0;
+      });
+    }
+
+    function playBgm() {
+      if (!audioUnlocked || !bgmEnabled) return;
+      bgmAudio.play().catch(() => {});
+    }
+
+    function stopBgm() {
+      bgmAudio.pause();
+      bgmAudio.currentTime = 0;
+    }
+
+    function playLoseSound() {
+      if (!audioUnlocked || !sfxEnabled) return;
+      loseAudio.currentTime = 0;
+      loseAudio.play().catch(() => {});
+    }
+
+    function playWinSound() {
+      if (!audioUnlocked || !sfxEnabled) return;
+      winAudio.currentTime = 0;
+      winAudio.play().catch(() => {});
     }
 
     function clearPlayedAreas() {
@@ -725,7 +787,6 @@
       setTurn("ai2Turn", state.currentPlayer === 2);
 
       setLandlord(state.landlordIndex);
-
       renderBackCards("ai1Backs", state.ai1CardCount);
       renderBackCards("ai2Backs", state.ai2CardCount);
 
@@ -838,6 +899,19 @@
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    function handleGameOverAudio() {
+      if (!gameState || !gameState.gameOver || endSoundPlayed) return;
+
+      endSoundPlayed = true;
+      stopBgm();
+
+      if (gameState.myCardCount === 0) {
+        playWinSound();
+      } else {
+        playLoseSound();
+      }
+    }
+
     async function autoRunAI() {
       let guard = 0;
       while (!gameState.gameOver && gameState.currentPlayer !== 0 && guard < 50) {
@@ -862,6 +936,8 @@
         guard++;
         await sleep(window.innerWidth >= 769 ? 680 : 520);
       }
+
+      handleGameOverAudio();
     }
 
     async function startGame() {
@@ -869,6 +945,11 @@
         appendLog("WASM 模块还没加载好。");
         return;
       }
+
+      unlockAudio();
+      endSoundPlayed = false;
+      stopAllSfx();
+      if (bgmEnabled) playBgm();
 
       wasmModule._game_init();
       selectedIndices.clear();
@@ -919,6 +1000,8 @@
 
       if (gameState.gameOver) appendLog("游戏结束。");
       else if (gameState.currentPlayer === 0) appendLog("又轮到你了。");
+
+      handleGameOverAudio();
     }
 
     async function passTurn() {
@@ -943,6 +1026,8 @@
 
       if (gameState.gameOver) appendLog("游戏结束。");
       else if (gameState.currentPlayer === 0) appendLog("又轮到你了。");
+
+      handleGameOverAudio();
     }
 
     function bindButtons() {
@@ -953,6 +1038,26 @@
         if (!wasmModule) return;
         renderAll();
         appendLog("界面已刷新。");
+      };
+
+      document.getElementById("btnBgmToggle").onclick = () => {
+        bgmEnabled = !bgmEnabled;
+        updateAudioButtons();
+
+        if (!bgmEnabled) {
+          stopBgm();
+        } else if (audioUnlocked && gameState && !gameState.gameOver) {
+          playBgm();
+        }
+      };
+
+      document.getElementById("btnSfxToggle").onclick = () => {
+        sfxEnabled = !sfxEnabled;
+        updateAudioButtons();
+
+        if (!sfxEnabled) {
+          stopAllSfx();
+        }
       };
 
       logToggle.onclick = () => {
@@ -970,6 +1075,7 @@
       }
 
       bindButtons();
+      updateAudioButtons();
       appendLog("WASM 模块加载完成。先点“开始游戏”。");
     }
 
