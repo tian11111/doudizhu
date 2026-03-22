@@ -93,7 +93,7 @@ Card landlordCards[3];          // 地主底牌（新增）
 // 函数声明
 void clearLastPlayedText();
 void buildPlayedTextFromSelection(const Player* player, int selected[], int count);
-void reset_all();
+void reset_all(bool keepScore);
 void initializeDeck(Deck* deck);
 void shuffleDeck(Deck* deck);
 void dealCards(Deck* deck, Player players[]);
@@ -119,13 +119,15 @@ bool check_team_win();                  // 检查队伍是否获胜
 void update_player_team();              // 更新玩家队伍归属
 
 // 重置所有游戏状态
-void reset_all() {
+void reset_all(bool keepScore) {
     // 清空三个玩家的所有数据
     for (int i = 0; i < 3; i++) {
         players[i].cardCount = 0;
         players[i].isLandlord = false;
         players[i].team = TEAM_FARMER;  // 默认农民队
-        players[i].score = 0;           // 初始化积分为0（新增）
+        if (!keepScore) {
+            players[i].score = 0;       // 只有当 keepScore 为 false 时才清零积分
+        }
         memset(players[i].hand, 0, sizeof(players[i].hand));
         memset(players[i].name, 0, sizeof(players[i].name));
     }
@@ -347,6 +349,24 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
     // 非法牌型
     play.type = PASS;
     return play;
+}
+
+bool check_team_win() {
+    if (landlordIndex < 0) return false;
+
+    // 地主出完牌，地主队赢
+    if (players[landlordIndex].cardCount == 0) {
+        return true;
+    }
+
+    // 任意一个农民出完牌，农民队赢
+    for (int i = 0; i < 3; i++) {
+        if (!players[i].isLandlord && players[i].cardCount == 0) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // 判断当前牌能否打过上家
@@ -739,119 +759,374 @@ void update_player_team() {
 // 新增：智能出牌逻辑（核心）
 int get_best_play(int playerIdx) {
     Player* player = &players[playerIdx];
-    // 1. 无上家出牌时：优先出小牌（单张3、对子33等）
-    if (lastPlay.type == PASS) {
-        // 找最小的单张
-        for (int i = 0; i < player->cardCount; i++) {
-            int selected[1] = { i };
-            Play play = analyzePlay(player, selected, 1);
-            if (play.type == SINGLE && play.point <= POINT_5) {
-                // 出这张牌
-                int selectedArr[1] = { i };
-                game_play_by_player(playerIdx, selectedArr, 1);
-                return 1;
+    int myTeam = players[playerIdx].team;
+    int mateIdx = -1;
+
+    // 找队友（只有农民才有队友）
+    if (myTeam == TEAM_FARMER) {
+        for (int i = 0; i < 3; i++) {
+            if (i != playerIdx && players[i].team == myTeam) {
+                mateIdx = i;
+                break;
             }
         }
-        // 无小单张则出最小对子
-        for (int i = 0; i < player->cardCount - 1; i++) {
-            if (player->hand[i].point == player->hand[i + 1].point) {
-                int selected[2] = { i, i + 1 };
-                Play play = analyzePlay(player, selected, 2);
-                if (play.type == PAIR && play.point <= POINT_5) {
-                    game_play_by_player(playerIdx, selected, 2);
-                    return 1;
-                }
-            }
-        }
-        // 否则出任意合法牌
-        int selected[1] = { 0 };
-        game_play_by_player(playerIdx, selected, 1);
-        return 1;
     }
 
-    // 2. 有上家出牌时：优先用最小的牌压制
+    int selfRemain = player->cardCount;
+    int landlordRemain = (landlordIndex >= 0) ? players[landlordIndex].cardCount : 99;
+    int nextIdx = (playerIdx + 1) % 3;
+    int prevIdx = lastPlayer;
+
+    // --- 小工具：统计手牌信息 ---
+    int pointCount[15] = { 0 };
+    bool hasSmallJoker = false, hasBigJoker = false;
+    for (int i = 0; i < player->cardCount; i++) {
+        int p = player->hand[i].point;
+        pointCount[p]++;
+        if (p == POINT_SMALL_JOKER) hasSmallJoker = true;
+        if (p == POINT_BIG_JOKER) hasBigJoker = true;
+    }
+
+    // 是否有王炸
+    bool hasRocket = hasSmallJoker && hasBigJoker;
+
+    // 候选解
     Play bestPlay = { 0 };
     int bestSelected[20] = { 0 };
     int bestCount = 0;
+    int bestScore = -1000000000;
     bool found = false;
 
-    // 遍历所有可能的出牌组合
-    // 单张压制
-    if (lastPlay.type == SINGLE) {
+    // --- 评分函数思想 ---
+    // 分高：能快走完、保留大牌结构、关键时刻压制对手
+    // 分低：乱拆对子/三张、浪费炸弹、压队友
+    // 这玩意不是什么 AlphaGo，就是比“瞎出”多想两步。
+
+    // 提交候选
+    #define TRY_CANDIDATE(selArr, selCount) do { \
+        int __selected[20] = {0}; \
+        for (int __k = 0; __k < (selCount); __k++) __selected[__k] = (selArr)[__k]; \
+        Play __play = analyzePlay(player, __selected, (selCount)); \
+        if (__play.type == PASS) break; \
+        if (!canPlayBeat(&__play, &lastPlay)) break; \
+        int __score = 0; \
+        int __remainAfter = player->cardCount - (selCount); \
+        int __samePointCount = pointCount[__play.point]; \
+        bool __isBomb = (__play.type == BOMB); \
+        bool __isRocket = (__play.type == ROCKET); \
+        \
+        /* 1. 能直接出完，优先级拉满 */ \
+        if (__remainAfter == 0) __score += 100000; \
+        if (__remainAfter == 1) __score += 1500; \
+        if (__remainAfter == 2) __score += 800; \
+        \
+        /* 2. 先手时尽量出小牌，不乱交大牌 */ \
+        if (lastPlay.type == PASS) { \
+            __score -= __play.point * 14; \
+            if (__play.type == SINGLE) __score += 180; \
+            if (__play.type == PAIR) __score += 120; \
+            if (__play.type == TRIPLE) __score += 60; \
+            if (__play.type == STRAIGHT) __score += 220 + __play.length * 12; \
+        } \
+        \
+        /* 3. 跟牌时倾向“刚好压住”，别拿大炮打蚊子 */ \
+        if (lastPlay.type != PASS) { \
+            if (__play.type == lastPlay.type) { \
+                __score -= (__play.point - lastPlay.point) * 18; \
+            } \
+            if (__play.type == STRAIGHT && lastPlay.type == STRAIGHT) { \
+                __score -= (__play.point - lastPlay.point) * 10; \
+            } \
+        } \
+        \
+        /* 4. 拆结构要扣分：单张拆对子/三张，对子拆三张 */ \
+        if (__play.type == SINGLE) { \
+            if (__samePointCount >= 2) __score -= 140; \
+            if (__samePointCount >= 3) __score -= 240; \
+            if (__play.point >= POINT_A) __score -= 120; \
+            if (__play.point >= POINT_2) __score -= 240; \
+        } \
+        if (__play.type == PAIR) { \
+            if (__samePointCount >= 3) __score -= 150; \
+            if (__play.point >= POINT_A) __score -= 80; \
+            if (__play.point >= POINT_2) __score -= 160; \
+        } \
+        if (__play.type == TRIPLE || __play.type == TRIPLE_ONE || __play.type == TRIPLE_PAIR) { \
+            if (__play.point >= POINT_A) __score -= 60; \
+            if (__play.point >= POINT_2) __score -= 120; \
+        } \
+        \
+        /* 5. 炸弹/王炸默认很贵，除非局势紧急 */ \
+        if (__isBomb) __score -= 900; \
+        if (__isRocket) __score -= 1300; \
+        \
+        /* 6. 积分策略：分低时更激进，分高时更保守 */ \
+        if (player->score < 0) { \
+            if (__isBomb) __score += 260; \
+            if (__isRocket) __score += 320; \
+            if (__remainAfter <= 2) __score += 200; \
+        } else if (player->score > 3) { \
+            if (__isBomb) __score -= 220; \
+            if (__isRocket) __score -= 260; \
+        } \
+        \
+        /* 7. 地主 / 农民不同思路 */ \
+        if (myTeam == TEAM_LANDLORD) { \
+            /* 地主要控节奏，农民快走时必须盯防 */ \
+            int farmerMin = 99; \
+            for (int __i = 0; __i < 3; __i++) { \
+                if (!players[__i].isLandlord && players[__i].cardCount < farmerMin) farmerMin = players[__i].cardCount; \
+            } \
+            if (farmerMin <= 2 && lastPlay.type != PASS) { \
+                __score += 600; \
+                if (__play.type == BOMB) __score += 180; \
+                if (__play.type == ROCKET) __score += 220; \
+            } \
+        } else { \
+            /* 农民：队友出的牌，能不压就别犯病 */ \
+            if (prevIdx != -1 && players[prevIdx].team == myTeam && lastPlay.type != PASS) { \
+                __score -= 1200; \
+                if (players[prevIdx].cardCount <= 2) __score -= 2400; \
+            } \
+            /* 对地主要更狠一点 */ \
+            if (prevIdx == landlordIndex && lastPlay.type != PASS) { \
+                __score += 260; \
+                if (players[landlordIndex].cardCount <= 2) __score += 700; \
+                if (__isBomb) __score += 120; \
+            } \
+        } \
+        \
+        /* 8. 下家危险时要卡牌 */ \
+        if (lastPlay.type != PASS && nextIdx == landlordIndex && players[nextIdx].cardCount <= 2) { \
+            __score += 260; \
+        } \
+        if (lastPlay.type != PASS && players[nextIdx].team != myTeam && players[nextIdx].cardCount <= 2) { \
+            __score += 420; \
+        } \
+        \
+        /* 9. 手牌很少时，允许打大一点，争取收尾 */ \
+        if (selfRemain <= 4) { \
+            __score += __play.cardCount * 120; \
+            if (__play.type == BOMB) __score += 160; \
+            if (__play.type == ROCKET) __score += 200; \
+        } \
+        \
+        if (!found || __score > bestScore) { \
+            found = true; \
+            bestScore = __score; \
+            bestPlay = __play; \
+            bestCount = (selCount); \
+            for (int __k = 0; __k < (selCount); __k++) bestSelected[__k] = __selected[__k]; \
+        } \
+    } while (0)
+
+    // ========== 枚举候选 ==========
+    // 先手：不需要跟 lastPlay，广一点枚举
+    if (lastPlay.type == PASS) {
+        // 单张
         for (int i = 0; i < player->cardCount; i++) {
-            int selected[1] = { i };
-            Play play = analyzePlay(player, selected, 1);
-            if (play.type == SINGLE && play.point > lastPlay.point) {
-                if (!found || play.point < bestPlay.point) {
-                    bestPlay = play;
-                    bestSelected[0] = i;
-                    bestCount = 1;
-                    found = true;
-                }
-            }
+            int sel[1] = { i };
+            TRY_CANDIDATE(sel, 1);
         }
-    }
-    // 对子压制
-    else if (lastPlay.type == PAIR) {
+
+        // 对子
         for (int i = 0; i < player->cardCount - 1; i++) {
             if (player->hand[i].point == player->hand[i + 1].point) {
-                int selected[2] = { i, i + 1 };
-                Play play = analyzePlay(player, selected, 2);
-                if (play.type == PAIR && play.point > lastPlay.point) {
-                    if (!found || play.point < bestPlay.point) {
-                        bestPlay = play;
-                        bestSelected[0] = i;
-                        bestSelected[1] = i + 1;
-                        bestCount = 2;
-                        found = true;
+                int sel[2] = { i, i + 1 };
+                TRY_CANDIDATE(sel, 2);
+            }
+        }
+
+        // 三张
+        for (int i = 0; i < player->cardCount - 2; i++) {
+            if (player->hand[i].point == player->hand[i + 2].point) {
+                int sel[3] = { i, i + 1, i + 2 };
+                TRY_CANDIDATE(sel, 3);
+            }
+        }
+
+        // 三带一
+        for (int i = 0; i < player->cardCount - 2; i++) {
+            if (player->hand[i].point == player->hand[i + 2].point) {
+                for (int k = 0; k < player->cardCount; k++) {
+                    if (k < i || k > i + 2) {
+                        int sel[4] = { i, i + 1, i + 2, k };
+                        TRY_CANDIDATE(sel, 4);
                     }
                 }
             }
         }
-    }
-    // 炸弹压制（非王炸）
-    else if (lastPlay.type != ROCKET) {
-        for (int i = 0; i < player->cardCount - 3; i++) {
-            if (player->hand[i].point == player->hand[i + 1].point &&
-                player->hand[i + 1].point == player->hand[i + 2].point &&
-                player->hand[i + 2].point == player->hand[i + 3].point) {
-                int selected[4] = { i, i + 1, i + 2, i + 3 };
-                Play play = analyzePlay(player, selected, 4);
-                if (play.type == BOMB) {
-                    bestPlay = play;
-                    memcpy(bestSelected, selected, sizeof(selected));
-                    bestCount = 4;
-                    found = true;
-                    break; // 炸弹直接出
+
+        // 三带二
+        for (int i = 0; i < player->cardCount - 2; i++) {
+            if (player->hand[i].point == player->hand[i + 2].point) {
+                for (int j = 0; j < player->cardCount - 1; j++) {
+                    if ((j < i || j > i + 2) &&
+                        (j + 1 < i || j + 1 > i + 2) &&
+                        player->hand[j].point == player->hand[j + 1].point &&
+                        player->hand[j].point != player->hand[i].point) {
+                        int sel[5] = { i, i + 1, i + 2, j, j + 1 };
+                        TRY_CANDIDATE(sel, 5);
+                    }
                 }
+            }
+        }
+
+        // 顺子（长度 5~8，够用了，再长容易把自己出傻）
+        for (int len = 5; len <= 8; len++) {
+            if (len > player->cardCount) break;
+            for (int i = 0; i <= player->cardCount - len; i++) {
+                int sel[20];
+                for (int k = 0; k < len; k++) sel[k] = i + k;
+                TRY_CANDIDATE(sel, len);
+            }
+        }
+
+        // 炸弹
+        for (int i = 0; i < player->cardCount - 3; i++) {
+            if (player->hand[i].point == player->hand[i + 3].point) {
+                int sel[4] = { i, i + 1, i + 2, i + 3 };
+                TRY_CANDIDATE(sel, 4);
+            }
+        }
+
+        // 王炸
+        if (hasRocket) {
+            int sj = -1, bj = -1;
+            for (int i = 0; i < player->cardCount; i++) {
+                if (player->hand[i].point == POINT_SMALL_JOKER) sj = i;
+                if (player->hand[i].point == POINT_BIG_JOKER) bj = i;
+            }
+            if (sj != -1 && bj != -1) {
+                int sel[2] = { sj, bj };
+                TRY_CANDIDATE(sel, 2);
+            }
+        }
+    }
+    else {
+        // 跟牌：只枚举能接住的类型 + 炸弹/王炸
+
+        if (lastPlay.type == SINGLE) {
+            for (int i = 0; i < player->cardCount; i++) {
+                int sel[1] = { i };
+                TRY_CANDIDATE(sel, 1);
+            }
+        }
+        else if (lastPlay.type == PAIR) {
+            for (int i = 0; i < player->cardCount - 1; i++) {
+                if (player->hand[i].point == player->hand[i + 1].point) {
+                    int sel[2] = { i, i + 1 };
+                    TRY_CANDIDATE(sel, 2);
+                }
+            }
+        }
+        else if (lastPlay.type == TRIPLE) {
+            for (int i = 0; i < player->cardCount - 2; i++) {
+                if (player->hand[i].point == player->hand[i + 2].point) {
+                    int sel[3] = { i, i + 1, i + 2 };
+                    TRY_CANDIDATE(sel, 3);
+                }
+            }
+        }
+        else if (lastPlay.type == TRIPLE_ONE) {
+            for (int i = 0; i < player->cardCount - 2; i++) {
+                if (player->hand[i].point == player->hand[i + 2].point) {
+                    for (int k = 0; k < player->cardCount; k++) {
+                        if (k < i || k > i + 2) {
+                            int sel[4] = { i, i + 1, i + 2, k };
+                            TRY_CANDIDATE(sel, 4);
+                        }
+                    }
+                }
+            }
+        }
+        else if (lastPlay.type == TRIPLE_PAIR) {
+            for (int i = 0; i < player->cardCount - 2; i++) {
+                if (player->hand[i].point == player->hand[i + 2].point) {
+                    for (int j = 0; j < player->cardCount - 1; j++) {
+                        if ((j < i || j > i + 2) &&
+                            (j + 1 < i || j + 1 > i + 2) &&
+                            player->hand[j].point == player->hand[j + 1].point &&
+                            player->hand[j].point != player->hand[i].point) {
+                            int sel[5] = { i, i + 1, i + 2, j, j + 1 };
+                            TRY_CANDIDATE(sel, 5);
+                        }
+                    }
+                }
+            }
+        }
+        else if (lastPlay.type == STRAIGHT) {
+            int len = lastPlay.length;
+            if (len >= 5 && len <= player->cardCount) {
+                for (int i = 0; i <= player->cardCount - len; i++) {
+                    int sel[20];
+                    for (int k = 0; k < len; k++) sel[k] = i + k;
+                    TRY_CANDIDATE(sel, len);
+                }
+            }
+        }
+
+        // 炸弹永远是兜底
+        if (lastPlay.type != ROCKET) {
+            for (int i = 0; i < player->cardCount - 3; i++) {
+                if (player->hand[i].point == player->hand[i + 3].point) {
+                    int sel[4] = { i, i + 1, i + 2, i + 3 };
+                    TRY_CANDIDATE(sel, 4);
+                }
+            }
+        }
+
+        // 王炸最后兜底
+        if (lastPlay.type != ROCKET && hasRocket) {
+            int sj = -1, bj = -1;
+            for (int i = 0; i < player->cardCount; i++) {
+                if (player->hand[i].point == POINT_SMALL_JOKER) sj = i;
+                if (player->hand[i].point == POINT_BIG_JOKER) bj = i;
+            }
+            if (sj != -1 && bj != -1) {
+                int sel[2] = { sj, bj };
+                TRY_CANDIDATE(sel, 2);
             }
         }
     }
 
-    // 找到最优牌则出，否则过牌
+    #undef TRY_CANDIDATE
+
+    // 农民时：队友出了牌，默认尽量不压，除非真危险
+    if (lastPlay.type != PASS &&
+        myTeam == TEAM_FARMER &&
+        prevIdx != -1 &&
+        players[prevIdx].team == myTeam &&
+        found) {
+
+        bool shouldForcePass = true;
+
+        // 队友只剩 1~2 张，基本不压
+        if (players[prevIdx].cardCount <= 2) {
+            shouldForcePass = true;
+        }
+        // 地主只剩 1~2 张，必须考虑接管
+        else if (landlordIndex >= 0 && players[landlordIndex].cardCount <= 2) {
+            shouldForcePass = false;
+        }
+        // 自己也快走完了，可以接
+        else if (player->cardCount <= 3) {
+            shouldForcePass = false;
+        }
+
+        if (shouldForcePass) {
+            game_pass_by_player(playerIdx);
+            return 0;
+        }
+    }
+
     if (found) {
         game_play_by_player(playerIdx, bestSelected, bestCount);
         return 1;
     }
-    else {
-        game_pass_by_player(playerIdx);
-        return 0;
-    }
-}
 
-// 新增：检查队伍是否获胜
-bool check_team_win() {
-    // 检查地主队
-    if (players[landlordIndex].cardCount == 0) {
-        return true;
-    }
-    // 检查农民队
-    for (int i = 0; i < 3; i++) {
-        if (!players[i].isLandlord && players[i].cardCount == 0) {
-            return true;
-        }
-    }
-    return false;
+    game_pass_by_player(playerIdx);
+    return 0;
 }
 
 // AI出牌（优化：调用智能出牌逻辑）
@@ -905,7 +1180,7 @@ int game_ai_step() {
 EMSCRIPTEN_KEEPALIVE
 #endif
 void game_init() {
-    reset_all();
+    reset_all(true);  // 保留积分
 
     srand((unsigned)time(NULL));
 
