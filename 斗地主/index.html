@@ -710,11 +710,11 @@
       border-radius: 999px;
       background: rgba(15, 23, 42, 0.72);
       border: 1px solid rgba(255,255,255,0.16);
-      color: #f8fafc;
+      color: #f8fafc !important;
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 1px;
-      text-indent: 0;
+      text-indent: 0 !important;
       box-shadow: 0 6px 14px rgba(0,0,0,0.2);
     }
 
@@ -1364,7 +1364,11 @@
         `游戏状态：${state.gameOver ? "已结束" : (state.landlordRobbed ? "进行中" : "抢地主中")}`;
       document.getElementById("playTypeText").textContent = `牌型：${playTypeName(state.lastPlayType)}`;
 
-      if (state.lastPlayer === -1 || state.lastPlayType === 0) {
+      if (state.lastPlayer === -1) {
+        clearPlayedAreas();
+      } else if (state.lastPlayedText === "过牌") {
+        renderPlayedArea(state.lastPlayer, "过牌");
+      } else if (state.lastPlayType === 0) {
         clearPlayedAreas();
       } else {
         renderPlayedArea(state.lastPlayer, state.lastPlayedText);
