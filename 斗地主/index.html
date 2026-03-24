@@ -513,6 +513,11 @@
       background: linear-gradient(180deg, #22c55e, #16a34a);
     }
 
+    .btn-start.started {
+      background: linear-gradient(180deg, #8b93a1, #6b7280);
+      opacity: 0.92;
+    }
+
     .btn-play {
       background: linear-gradient(180deg, #3b82f6, #2563eb);
     }
@@ -1258,6 +1263,7 @@
     const robPanel = document.getElementById("robPanel");
     const resultPanel = document.getElementById("resultPanel");
     const toastWrap = document.getElementById("toastWrap");
+    const btnStart = document.getElementById("btnStart");
 
     const bgmAudio = document.getElementById("bgmAudio");
     const loseAudio = document.getElementById("loseAudio");
@@ -1299,6 +1305,15 @@
       }, timeout);
     }
 
+
+    function refreshStartButton() {
+      if (!btnStart) return;
+      const started = !!gameState;
+      btnStart.textContent = started ? "重新开始游戏" : "开始游戏";
+      btnStart.classList.toggle("started", started);
+      btnStart.title = started ? "重新开一局" : "开始新游戏";
+    }
+
     function playerName(index) {
       return index === 0 ? "你" : index === 1 ? "电脑1" : index === 2 ? "电脑2" : "无";
     }
@@ -1313,8 +1328,11 @@
         5: "三带二",
         6: "顺子",
         7: "连对",
-        8: "炸弹",
-        9: "王炸"
+        8: "飞机",
+        9: "飞机带单",
+        10: "飞机带对",
+        11: "炸弹",
+        12: "王炸"
       };
       return map[type] || "未知";
     }
@@ -1619,7 +1637,26 @@
       const counts = {};
       for (const p of points) counts[p] = (counts[p]||0)+1;
       const vals = Object.values(counts).sort((a,b)=>a-b);
+      const uniq = Object.keys(counts).map(Number).sort((a,b)=>a-b);
+
       let type = "";
+
+      const findPlaneTriples = () => {
+        const tripleRanks = uniq.filter(p => counts[p] >= 3 && p < 12).sort((a,b)=>a-b); // 不含2和王
+        if (tripleRanks.length < 2) return [];
+        let best = [];
+        let cur = [tripleRanks[0]];
+        for (let i = 1; i < tripleRanks.length; i++) {
+          if (tripleRanks[i] === tripleRanks[i - 1] + 1) cur.push(tripleRanks[i]);
+          else {
+            if (cur.length >= 2 && cur.length > best.length) best = cur.slice();
+            cur = [tripleRanks[i]];
+          }
+        }
+        if (cur.length >= 2 && cur.length > best.length) best = cur.slice();
+        return best;
+      };
+
       if (points.length === 1) type = "单张";
       else if (points.length === 2 && vals.length === 1 && vals[0] === 2) type = "对子";
       else if (points.length === 2 && points[0] === 13 && points[1] === 14) type = "王炸";
@@ -1629,9 +1666,30 @@
       else if (points.length === 5 && vals.join(',') === '2,3') type = "三带二";
       else if (points.length >= 5 && vals.every(v => v === 1) && points[points.length-1] <= 11 && points.every((p,i)=>i===0 || p===points[i-1]+1)) type = "顺子";
       else if (points.length >= 6 && points.length % 2 === 0 && vals.every(v => v === 2)) {
-        const uniq = Object.keys(counts).map(Number).sort((a,b)=>a-b);
         if (uniq[uniq.length-1] <= 11 && uniq.every((p,i)=>i===0 || p===uniq[i-1]+1)) type = "连对";
       }
+
+      if (!type) {
+        const plane = findPlaneTriples();
+        if (plane.length >= 2) {
+          const n = plane.length;
+          const total = points.length;
+          if (total === n * 3) {
+            type = "飞机";
+          } else if (total === n * 4) {
+            const temp = { ...counts };
+            plane.forEach(p => temp[p] -= 3);
+            const singles = Object.values(temp).reduce((s,v)=>s+v,0);
+            if (singles === n) type = "飞机带单";
+          } else if (total === n * 5) {
+            const temp = { ...counts };
+            plane.forEach(p => temp[p] -= 3);
+            const pairVals = Object.values(temp).filter(v => v > 0).sort((a,b)=>a-b);
+            if (pairVals.length === n && pairVals.every(v => v === 2)) type = "飞机带对";
+          }
+        }
+      }
+
       if (!type) return "牌型不对。";
 
       const currentType = playTypeName(gameState.lastPlayType);
@@ -1735,6 +1793,7 @@
       updateState();
       renderStatus(gameState);
       renderHand(gameState);
+      refreshStartButton();
     }
 
     function mallocIntArray(values) {
@@ -2065,6 +2124,7 @@
       bindButtons();
       setLogToggleText();
       updateAudioButtons();
+      refreshStartButton();
       notify("WASM 模块加载完成。先点开始游戏。", "success", true, 2200);
       notify("通知弹窗已启用。", "info", false, 1400);
     }

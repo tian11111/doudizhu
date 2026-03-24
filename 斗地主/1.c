@@ -18,6 +18,9 @@ typedef enum {
     TRIPLE_PAIR,      // 三带二
     STRAIGHT,         // 顺子
     DOUBLE_STRAIGHT,  // 连对
+    AIRCRAFT,         // 飞机（连续三张）
+    AIRCRAFT_ONE,     // 飞机带单张
+    AIRCRAFT_PAIR,    // 飞机带对子
     BOMB,             // 炸弹（四张相同）
     ROCKET            // 王炸（大小王）
 } PlayType;
@@ -374,6 +377,134 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
         }
     }
 
+    // 飞机（纯三张连续）：至少 2 个连续三张，不能包含 2 和王
+    if (selectedCount >= 6 && selectedCount % 3 == 0) {
+        int tripleCount = selectedCount / 3;
+        bool isAircraft = true;
+
+        for (int i = 0; i < tripleCount; i++) {
+            int baseIdx = i * 3;
+            // 检查是否是三张相同的
+            if (points[baseIdx] != points[baseIdx + 1] || 
+                points[baseIdx + 1] != points[baseIdx + 2]) {
+                isAircraft = false;
+                break;
+            }
+            // 检查是否包含 2 或王
+            if (points[baseIdx] >= POINT_2) {
+                isAircraft = false;
+                break;
+            }
+            // 检查是否连续
+            if (i > 0 && points[baseIdx] != points[baseIdx - 3] + 1) {
+                isAircraft = false;
+                break;
+            }
+        }
+
+        if (isAircraft) {
+            play.type = AIRCRAFT;
+            play.point = points[0];
+            play.length = selectedCount;
+            return play;
+        }
+    }
+
+    // 飞机带单张：至少 2 个连续三张 + 相同数量的单张
+    if (selectedCount >= 8 && selectedCount % 4 == 0) {
+        int tripleCount = selectedCount / 4;  // 三张的组数（总牌数 = 4n）
+        // 先排序，让三张在前，单张在后
+        int aircraftPoints[20];
+        int extraCards[20];
+        int extraCount = 0;
+        
+        // 提取所有可能的三张
+        int foundTriples = 0;
+        for (int i = 0; i < selectedCount && foundTriples < tripleCount; ) {
+            if (i + 2 < selectedCount && 
+                points[i] == points[i + 1] && 
+                points[i + 1] == points[i + 2] &&
+                points[i] < POINT_2) {
+                aircraftPoints[foundTriples] = points[i];
+                foundTriples++;
+                i += 3;
+            } else {
+                extraCards[extraCount++] = points[i];
+                i++;
+            }
+        }
+        
+        // 检查是否找到足够的三张且它们连续
+        bool isAircraftWithSingle = (foundTriples == tripleCount);
+        if (isAircraftWithSingle) {
+            for (int i = 1; i < foundTriples; i++) {
+                if (aircraftPoints[i] != aircraftPoints[i - 1] + 1) {
+                    isAircraftWithSingle = false;
+                    break;
+                }
+            }
+        }
+        
+        if (isAircraftWithSingle && extraCount == tripleCount) {
+            play.type = AIRCRAFT_ONE;
+            play.point = aircraftPoints[0];
+            play.length = selectedCount;
+            return play;
+        }
+    }
+
+    // 飞机带对子：至少 2 个连续三张 + 相同数量的对子
+    if (selectedCount >= 10 && selectedCount % 5 == 0) {
+        int tripleCount = selectedCount / 5;  // 三张的组数（总牌数 = 5n）
+        // 提取所有可能的三张和对子
+        int aircraftPoints[20];
+        int pairPoints[20];
+        int foundTriples = 0;
+        int foundPairs = 0;
+        
+        // 统计每个点数的出现次数
+        int countMap[15] = {0};
+        for (int i = 0; i < selectedCount; i++) {
+            countMap[points[i]]++;
+        }
+        
+        // 找出所有可用的三张（点数<2）
+        for (int p = 0; p < POINT_2; p++) {
+            if (countMap[p] >= 3 && foundTriples < tripleCount) {
+                aircraftPoints[foundTriples++] = p;
+                countMap[p] -= 3;
+            }
+        }
+        
+        // 检查三张是否连续
+        bool isAircraftWithPair = (foundTriples == tripleCount);
+        if (isAircraftWithPair) {
+            for (int i = 1; i < foundTriples; i++) {
+                if (aircraftPoints[i] != aircraftPoints[i - 1] + 1) {
+                    isAircraftWithPair = false;
+                    break;
+                }
+            }
+        }
+        
+        // 找出所有可用的对子
+        if (isAircraftWithPair) {
+            for (int p = 0; p < 15 && foundPairs < tripleCount; p++) {
+                if (countMap[p] >= 2) {
+                    pairPoints[foundPairs++] = p;
+                    countMap[p] -= 2;
+                }
+            }
+        }
+        
+        if (isAircraftWithPair && foundPairs == tripleCount) {
+            play.type = AIRCRAFT_PAIR;
+            play.point = aircraftPoints[0];
+            play.length = selectedCount;
+            return play;
+        }
+    }
+
     // 非法牌型
     play.type = PASS;
     return play;
@@ -424,7 +555,9 @@ bool canPlayBeat(const Play* current, const Play* last) {
 
     // 同类型比较
     if (current->type == last->type) {
-        if (current->type == STRAIGHT || current->type == DOUBLE_STRAIGHT) {
+        if (current->type == STRAIGHT || current->type == DOUBLE_STRAIGHT || 
+            current->type == AIRCRAFT || current->type == AIRCRAFT_ONE || 
+            current->type == AIRCRAFT_PAIR) {
             if (current->length != last->length) {
                 return false;
             }
@@ -982,6 +1115,90 @@ int get_best_play(int playerIdx) {
             }
         }
 
+        // 飞机（纯三张，长度 6~15）
+        for (int tripleCount = 2; tripleCount <= 5; tripleCount++) {
+            int len = tripleCount * 3;
+            if (len > player->cardCount) break;
+            for (int i = 0; i <= player->cardCount - len; i++) {
+                int sel[20];
+                for (int k = 0; k < len; k++) sel[k] = i + k;
+                TRY_CANDIDATE(sel, len);
+            }
+        }
+
+        // 飞机带单张（至少 2 个三张 + 等量单张）
+        for (int tripleCount = 2; tripleCount <= 4; tripleCount++) {
+            int totalLen = tripleCount * 4;  // 每个三张带一个单张
+            if (totalLen > player->cardCount) break;
+            
+            // 枚举所有可能的三张组合
+            for (int start = 0; start <= player->cardCount - totalLen; start++) {
+                // 检查是否构成连续的三张
+                bool valid = true;
+                for (int t = 0; t < tripleCount; t++) {
+                    int baseIdx = start + t * 4;
+                    if (player->hand[baseIdx].point != player->hand[baseIdx + 1].point ||
+                        player->hand[baseIdx + 1].point != player->hand[baseIdx + 2].point ||
+                        player->hand[baseIdx].point >= POINT_2) {
+                        valid = false;
+                        break;
+                    }
+                    if (t > 0 && player->hand[start + t * 4].point != 
+                             player->hand[start + (t-1) * 4].point + 1) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid) {
+                    int sel[20];
+                    for (int k = 0; k < totalLen; k++) sel[k] = start + k;
+                    TRY_CANDIDATE(sel, totalLen);
+                }
+            }
+        }
+
+        // 飞机带对子（至少 2 个三张 + 等量对子）
+        for (int tripleCount = 2; tripleCount <= 3; tripleCount++) {
+            int totalLen = tripleCount * 5;  // 每个三张带一个对子
+            if (totalLen > player->cardCount) break;
+            
+            // 简化处理：枚举起始位置
+            for (int start = 0; start <= player->cardCount - totalLen; start++) {
+                bool valid = true;
+                // 检查前三个是否为连续三张
+                for (int t = 0; t < tripleCount; t++) {
+                    int baseIdx = start + t * 5;
+                    if (player->hand[baseIdx].point != player->hand[baseIdx + 1].point ||
+                        player->hand[baseIdx + 1].point != player->hand[baseIdx + 2].point ||
+                        player->hand[baseIdx].point >= POINT_2) {
+                        valid = false;
+                        break;
+                    }
+                    if (t > 0 && player->hand[start + t * 5].point != 
+                             player->hand[start + (t-1) * 5].point + 1) {
+                        valid = false;
+                        break;
+                    }
+                }
+                // 检查剩余的是否为对子
+                if (valid) {
+                    for (int p = 0; p < tripleCount; p++) {
+                        int pairIdx = start + tripleCount * 3 + p * 2;
+                        if (pairIdx + 1 >= player->cardCount ||
+                            player->hand[pairIdx].point != player->hand[pairIdx + 1].point) {
+                            valid = false;
+                            break;
+                        }
+                    }
+                }
+                if (valid) {
+                    int sel[20];
+                    for (int k = 0; k < totalLen; k++) sel[k] = start + k;
+                    TRY_CANDIDATE(sel, totalLen);
+                }
+            }
+        }
+
         // 炸弹
         for (int i = 0; i < player->cardCount - 3; i++) {
             if (player->hand[i].point == player->hand[i + 3].point) {
@@ -1068,6 +1285,36 @@ int get_best_play(int playerIdx) {
         else if (lastPlay.type == DOUBLE_STRAIGHT) {
             int len = lastPlay.length;
             if (len >= 6 && len <= player->cardCount && len % 2 == 0) {
+                for (int i = 0; i <= player->cardCount - len; i++) {
+                    int sel[20];
+                    for (int k = 0; k < len; k++) sel[k] = i + k;
+                    TRY_CANDIDATE(sel, len);
+                }
+            }
+        }
+        else if (lastPlay.type == AIRCRAFT) {
+            int len = lastPlay.length;
+            if (len >= 6 && len <= player->cardCount && len % 3 == 0) {
+                for (int i = 0; i <= player->cardCount - len; i++) {
+                    int sel[20];
+                    for (int k = 0; k < len; k++) sel[k] = i + k;
+                    TRY_CANDIDATE(sel, len);
+                }
+            }
+        }
+        else if (lastPlay.type == AIRCRAFT_ONE) {
+            int len = lastPlay.length;
+            if (len >= 8 && len <= player->cardCount && len % 4 == 0) {
+                for (int i = 0; i <= player->cardCount - len; i++) {
+                    int sel[20];
+                    for (int k = 0; k < len; k++) sel[k] = i + k;
+                    TRY_CANDIDATE(sel, len);
+                }
+            }
+        }
+        else if (lastPlay.type == AIRCRAFT_PAIR) {
+            int len = lastPlay.length;
+            if (len >= 10 && len <= player->cardCount && len % 5 == 0) {
                 for (int i = 0; i <= player->cardCount - len; i++) {
                     int sel[20];
                     for (int k = 0; k < len; k++) sel[k] = i + k;
