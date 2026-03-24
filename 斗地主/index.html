@@ -678,6 +678,260 @@
         margin: 0 auto;
       }
     }
+  
+
+    .mini-card,
+    .show-card,
+    .my-card {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: transparent;
+      text-indent: -9999px;
+      overflow: hidden;
+    }
+
+    .mini-card.has-face {
+      min-width: 36px;
+      width: 36px;
+      height: 50px;
+      padding: 0;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background-color: #fff;
+    }
+
+    .show-card.has-face,
+    .my-card.has-face {
+      border-color: rgba(255,255,255,0.18);
+      background-color: #fff;
+    }
+
+    .my-card.selected.has-face {
+      border: 2px solid #3b82f6;
+      box-shadow: 0 12px 18px rgba(0,0,0,0.28), 0 0 0 2px rgba(59,130,246,0.25);
+    }
+
+    @media (max-width: 768px) and (orientation: landscape) {
+      .app {
+        min-height: 100vh;
+        padding:
+          max(6px, var(--safe-top))
+          8px
+          calc(8px + var(--safe-bottom))
+          8px;
+      }
+
+      .app-inner {
+        max-width: 100%;
+      }
+
+      .app-inner::before {
+        border-radius: 18px;
+      }
+
+      .title {
+        font-size: 20px;
+        padding-top: 2px;
+      }
+
+      .top-status,
+      .scoreboard,
+      .phase-bar,
+      .board,
+      .rob-panel,
+      .hand-wrap,
+      .controls,
+      .log-toggle,
+      .log {
+        width: calc(100% - 8px);
+      }
+
+      .top-status,
+      .scoreboard,
+      .phase-bar,
+      .board,
+      .rob-panel,
+      .hand-wrap,
+      .controls,
+      .log-toggle {
+        margin-top: 6px;
+      }
+
+      .scoreboard {
+        gap: 6px;
+      }
+
+      .score-chip {
+        padding: 8px 6px;
+        border-radius: 12px;
+      }
+
+      .score-name,
+      .score-tag,
+      .phase-text,
+      .top-status,
+      .player-count,
+      .play-type,
+      .hand-title {
+        font-size: 11px;
+      }
+
+      .score-value {
+        font-size: 18px;
+      }
+
+      .phase-bar {
+        padding: 8px 10px;
+        border-radius: 12px;
+      }
+
+      .bottom-cards {
+        gap: 4px;
+      }
+
+      .mini-card.has-face {
+        width: 28px;
+        min-width: 28px;
+        height: 40px;
+      }
+
+      .board {
+        padding: 8px;
+        border-radius: 16px;
+      }
+
+      .ai-row {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .player-mini,
+      .player-mini.me-card {
+        min-height: 112px;
+        padding: 8px 6px 6px;
+        grid-column: span 1;
+      }
+
+      .player-name {
+        font-size: 13px;
+      }
+
+      .turn-badge {
+        margin-top: 4px;
+        font-size: 10px;
+        padding: 3px 8px;
+      }
+
+      .landlord {
+        top: -6px;
+        right: -4px;
+        font-size: 10px;
+        padding: 4px 8px;
+      }
+
+      .back-area {
+        height: 42px;
+        margin-top: 8px;
+      }
+
+      .back-card {
+        width: 28px;
+        height: 40px;
+        border-radius: 6px;
+      }
+
+      .back-card::after {
+        font-size: 13px;
+      }
+
+      .play-zone {
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 14px;
+      }
+
+      .play-zone-title,
+      .played-slot-title {
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+
+      .played-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .played-slot {
+        min-height: 76px;
+        padding: 6px 4px;
+        border-radius: 10px;
+      }
+
+      .played-cards {
+        gap: 3px;
+        min-height: 44px;
+      }
+
+      .show-card {
+        width: 30px;
+        height: 44px;
+        border-radius: 6px;
+      }
+
+      .rob-panel {
+        padding: 8px;
+      }
+
+      .rob-title {
+        font-size: 14px;
+        margin-bottom: 6px;
+      }
+
+      .rob-tip {
+        font-size: 11px;
+        margin-bottom: 8px;
+      }
+
+      .rob-actions {
+        gap: 8px;
+      }
+
+      .rob-btn,
+      button.action {
+        padding: 9px 6px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+
+      .hand-wrap {
+        padding: 8px 6px 10px;
+        border-radius: 14px;
+      }
+
+      .hand-area {
+        height: 84px;
+      }
+
+      .my-card {
+        width: 40px;
+        height: 58px;
+        border-radius: 8px;
+        padding: 0;
+      }
+
+      .controls {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+      }
+
+      .log {
+        max-height: 96px;
+        font-size: 11px;
+        padding: 8px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -806,6 +1060,30 @@
 
   <script src="./game.js"></script>
   <script>
+    const CARD_IMAGES = {"10方": "./牌组/10方.jpg", "10梅": "./牌组/10梅.jpg", "10红": "./牌组/10红.jpg", "10黑": "./牌组/10黑.jpg", "2方": "./牌组/2方.jpg", "2梅": "./牌组/2梅.jpg", "2红": "./牌组/2红.jpg", "2黑": "./牌组/2黑.jpg", "3方": "./牌组/3方.jpg", "3梅": "./牌组/3梅.jpg", "3红": "./牌组/3红.jpg", "3黑": "./牌组/3黑.jpg", "4方": "./牌组/4方.jpg", "4梅": "./牌组/4梅.jpg", "4红": "./牌组/4红.jpg", "4黑": "./牌组/4黑.jpg", "5方": "./牌组/5方.jpg", "5梅": "./牌组/5梅.jpg", "5红": "./牌组/5红.jpg", "5黑": "./牌组/5黑.jpg", "6方": "./牌组/6方.jpg", "6梅": "./牌组/6梅.jpg", "6红": "./牌组/6红.jpg", "6黑": "./牌组/6黑.jpg", "7方": "./牌组/7方.jpg", "7梅": "./牌组/7梅.jpg", "7红": "./牌组/7红.jpg", "7黑": "./牌组/7黑.jpg", "8方": "./牌组/8方.jpg", "8梅": "./牌组/8梅.jpg", "8红": "./牌组/8红.jpg", "8黑": "./牌组/8黑.jpg", "9方": "./牌组/9方.jpg", "9梅": "./牌组/9梅.jpg", "9红": "./牌组/9红.jpg", "9黑": "./牌组/9黑.jpg", "A方": "./牌组/A方.jpg", "A梅": "./牌组/A梅.jpg", "A红": "./牌组/A红.jpg", "A黑": "./牌组/A黑.jpg", "J方psd": "./牌组/J方psd.jpg", "J梅": "./牌组/J梅.jpg", "J红": "./牌组/J红.jpg", "J黑": "./牌组/J黑.jpg", "K方": "./牌组/K方.jpg", "K梅": "./牌组/K梅.jpg", "K红": "./牌组/K红.jpg", "K黑": "./牌组/K黑.jpg", "Q方": "./牌组/Q方.jpg", "Q梅": "./牌组/Q梅.jpg", "Q红": "./牌组/Q红.jpg", "Q黑": "./牌组/Q黑.jpg", "大王": "./牌组/大王.jpg", "小王": "./牌组/小王.jpg"};
+
+    function getCardImage(name) {
+      if (name === "J方" && CARD_IMAGES["J方psd"]) return CARD_IMAGES["J方psd"];
+      return CARD_IMAGES[name] || "";
+    }
+
+    function applyCardFace(el, name) {
+      const src = getCardImage(name);
+      if (src) {
+        el.classList.add("has-face");
+        el.style.backgroundImage = `url(${src})`;
+        el.textContent = name;
+        el.setAttribute("aria-label", name);
+        el.title = name;
+      } else {
+        el.classList.remove("has-face");
+        el.style.backgroundImage = "";
+        el.textContent = name;
+        el.removeAttribute("aria-label");
+        el.title = name;
+      }
+    }
+
     let wasmModule = null;
     let gameState = null;
     let prevState = null;
@@ -975,7 +1253,7 @@
       cards.forEach(card => {
         const div = document.createElement("div");
         div.className = "show-card";
-        div.textContent = card;
+        applyCardFace(div, card);
         target.appendChild(div);
       });
     }
@@ -989,7 +1267,7 @@
       state.landlordCards.forEach(card => {
         const div = document.createElement("div");
         div.className = "mini-card";
-        div.textContent = card;
+        applyCardFace(div, card);
         box.appendChild(div);
       });
     }
@@ -1055,6 +1333,8 @@
     }
 
     function getCardMetrics() {
+      const landscapeMobile = window.innerWidth <= 768 && window.innerWidth > window.innerHeight;
+
       if (window.innerWidth >= 769) {
         return {
           cardWidth: 60,
@@ -1062,6 +1342,16 @@
           selectedTop: 12,
           maxOverlap: 34,
           minOverlap: 18
+        };
+      }
+
+      if (landscapeMobile) {
+        return {
+          cardWidth: 40,
+          baseTop: 24,
+          selectedTop: 4,
+          maxOverlap: 24,
+          minOverlap: 6
         };
       }
 
@@ -1106,7 +1396,7 @@
         div.style.top = selectedIndices.has(index)
           ? metrics.selectedTop + "px"
           : metrics.baseTop + "px";
-        div.textContent = cardName;
+        applyCardFace(div, cardName);
         div.style.cursor = canSelect ? "pointer" : "default";
         div.style.opacity = canSelect ? "1" : "0.96";
 
