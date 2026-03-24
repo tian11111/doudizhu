@@ -1065,11 +1065,2108 @@
       }
     }
 
+  
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      width: 42vmax;
+      height: 42vmax;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(56px);
+      opacity: 0.12;
+      z-index: 0;
+      animation: driftGlow 18s ease-in-out infinite;
+    }
+
+    body::before {
+      top: -16vmax;
+      left: -10vmax;
+      background: radial-gradient(circle, rgba(250,204,21,0.42) 0%, rgba(250,204,21,0.08) 42%, transparent 70%);
+    }
+
+    body::after {
+      right: -14vmax;
+      bottom: -20vmax;
+      background: radial-gradient(circle, rgba(59,130,246,0.34) 0%, rgba(59,130,246,0.07) 40%, transparent 72%);
+      animation-duration: 24s;
+      animation-direction: alternate;
+    }
+
+    @keyframes driftGlow {
+      0% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(2vmax, -1.5vmax, 0) scale(1.08); }
+      100% { transform: translate3d(-2vmax, 2vmax, 0) scale(0.96); }
+    }
+
+    .app,
+    .app-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .app-inner {
+      overflow: hidden;
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)),
+        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 38%);
+      box-shadow:
+        0 28px 80px rgba(0,0,0,0.24),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .app-inner::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.06), transparent 18%, transparent 82%, rgba(255,255,255,0.05)),
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.07), transparent 30%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .title {
+      position: relative;
+    }
+
+    .title::after {
+      content: "";
+      width: 120px;
+      height: 10px;
+      border-radius: 999px;
+      position: absolute;
+      left: 50%;
+      bottom: -8px;
+      transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(247,215,116,0.5), transparent 70%);
+      filter: blur(6px);
+      opacity: .9;
+    }
+
+    .top-status span,
+    .phase-text,
+    .score-tag {
+      letter-spacing: .3px;
+    }
+
+    .top-status span {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .score-chip,
+    .player-mini,
+    .played-slot,
+    .result-player,
+    .phase-bar,
+    .play-zone,
+    .hand-wrap,
+    .rob-panel,
+    .result-panel,
+    .log,
+    .top-status,
+    .board {
+      box-shadow:
+        0 14px 32px rgba(0,0,0,0.18),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .score-chip,
+    .player-mini,
+    .played-slot,
+    .result-player,
+    .rob-panel,
+    .result-panel,
+    .phase-bar,
+    .hand-wrap,
+    .play-zone,
+    button.action,
+    .rob-btn,
+    .log-toggle {
+      transition:
+        transform .24s ease,
+        box-shadow .24s ease,
+        border-color .24s ease,
+        background-color .24s ease,
+        opacity .24s ease;
+    }
+
+    .score-chip:hover,
+    .player-mini:hover,
+    .played-slot:hover,
+    .result-player:hover,
+    .phase-bar:hover,
+    .hand-wrap:hover,
+    .play-zone:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        0 18px 36px rgba(0,0,0,0.22),
+        inset 0 1px 0 rgba(255,255,255,0.07);
+    }
+
+    .score-chip.me {
+      box-shadow:
+        0 18px 42px rgba(250,204,21,0.12),
+        0 14px 32px rgba(0,0,0,0.18),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .player-mini.active-turn {
+      border-color: rgba(250,204,21,0.56);
+      background:
+        linear-gradient(180deg, rgba(250,204,21,0.14), rgba(255,255,255,0.06)),
+        rgba(255,255,255,0.08);
+      box-shadow:
+        0 0 0 1px rgba(250,204,21,0.22),
+        0 18px 44px rgba(250,204,21,0.12),
+        0 18px 36px rgba(0,0,0,0.2);
+      animation: panelPulse 1.65s ease-in-out infinite;
+    }
+
+    @keyframes panelPulse {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+
+    .turn-badge {
+      animation: badgePulse 1.25s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 4px 10px rgba(0,0,0,0.16); }
+      50% { transform: scale(1.04); box-shadow: 0 8px 18px rgba(250,204,21,0.22); }
+    }
+
+    .played-slot.recent-play {
+      border-color: rgba(96,165,250,0.5);
+      background: linear-gradient(180deg, rgba(59,130,246,0.14), rgba(255,255,255,0.05));
+      box-shadow:
+        0 0 0 1px rgba(96,165,250,0.16),
+        0 16px 34px rgba(37,99,235,0.12),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .played-slot.recent-play .played-slot-title {
+      color: #bfdbfe;
+    }
+
+    .back-card {
+      transition: transform .24s ease, box-shadow .24s ease, opacity .24s ease;
+    }
+
+    .player-mini.active-turn .back-card {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.24);
+    }
+
+    .mini-card,
+    .show-card,
+    .my-card {
+      transform-origin: center bottom;
+      will-change: transform;
+    }
+
+    .show-card {
+      transition: transform .22s ease, box-shadow .22s ease, filter .22s ease;
+    }
+
+    .show-card:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.22);
+      filter: saturate(1.05);
+    }
+
+    .my-card {
+      transition:
+        top .18s ease,
+        transform .18s ease,
+        box-shadow .18s ease,
+        border-color .18s ease,
+        filter .18s ease;
+    }
+
+    .my-card:hover {
+      transform: translateY(-4px) scale(1.03);
+      box-shadow: 0 14px 24px rgba(0,0,0,0.26);
+      z-index: 2;
+    }
+
+    .my-card.selected {
+      transform: translateY(-8px) scale(1.04);
+    }
+
+    .my-card.selected:hover {
+      transform: translateY(-10px) scale(1.06);
+    }
+
+    .hand-area::before,
+    .hand-area::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 24px;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .hand-area::before {
+      left: 0;
+      background: linear-gradient(90deg, rgba(0,0,0,0.18), transparent);
+    }
+
+    .hand-area::after {
+      right: 0;
+      background: linear-gradient(270deg, rgba(0,0,0,0.18), transparent);
+    }
+
+    button.action,
+    .rob-btn,
+    .log-toggle {
+      position: relative;
+      overflow: hidden;
+    }
+
+    button.action::before,
+    .rob-btn::before,
+    .log-toggle::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.15) 34%, transparent 68%);
+      transform: translateX(-120%);
+      transition: transform .5s ease;
+      pointer-events: none;
+    }
+
+    button.action:hover::before,
+    .rob-btn:hover::before,
+    .log-toggle:hover::before {
+      transform: translateX(120%);
+    }
+
+    button.action:hover,
+    .rob-btn:hover,
+    .log-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 24px rgba(0,0,0,0.22);
+    }
+
+    button.action:active,
+    .rob-btn:active,
+    .log-toggle:active {
+      transform: translateY(0) scale(.98);
+    }
+
+    .phase-bar {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.07), rgba(0,0,0,0.18)),
+        rgba(0,0,0,0.18);
+    }
+
+    .play-zone-title,
+    .result-title,
+    .rob-title {
+      text-shadow: 0 3px 10px rgba(0,0,0,0.22);
+    }
+
+    .toast {
+      border-left: 3px solid rgba(255,255,255,0.18);
+    }
+
+    .toast.show {
+      animation: toastFloat .22s ease, toastBreath 2.2s ease-in-out .3s 1;
+    }
+
+    @keyframes toastFloat {
+      from { opacity: 0; transform: translateY(-8px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes toastBreath {
+      0%, 100% { box-shadow: 0 14px 28px rgba(0,0,0,0.28); }
+      50% { box-shadow: 0 18px 30px rgba(0,0,0,0.34); }
+    }
+
+    .score-value {
+      text-shadow: 0 3px 10px rgba(0,0,0,0.18);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+  
+
+    /* ===== game flavor upgrade ===== */
+    :root {
+      --felt-deep: #0e4c31;
+      --felt-mid: #1b6d45;
+      --felt-light: #27915c;
+      --frame-dark: #3d220c;
+      --frame-mid: #6a3d14;
+      --frame-light: #a96a26;
+      --gold-soft: #ffe8a6;
+      --gold-strong: #ffca57;
+      --gold-deep: #b87610;
+      --ink-deep: #081510;
+      --panel-dark: rgba(10, 24, 18, 0.56);
+      --panel-edge: rgba(255, 225, 149, 0.16);
+    }
+
+    html, body {
+      background: #071a13;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 50% 18%, rgba(37, 143, 88, 0.28) 0%, rgba(11, 49, 32, 0.08) 28%, transparent 42%),
+        radial-gradient(circle at 50% 120%, rgba(255, 200, 87, 0.08) 0%, transparent 35%),
+        linear-gradient(180deg, #0a1f18 0%, #081510 100%);
+      position: relative;
+    }
+
+    body::before,
+    body::after {
+      opacity: 0.18;
+      filter: blur(72px);
+    }
+
+    .app {
+      padding-top: max(12px, var(--safe-top));
+    }
+
+    .app-inner {
+      border-radius: 34px;
+      padding-bottom: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+        linear-gradient(180deg, rgba(90, 49, 14, 0.18), rgba(0,0,0,0) 24%),
+        radial-gradient(circle at 50% 0%, rgba(255,237,173,0.08), transparent 24%),
+        linear-gradient(180deg, rgba(14,50,34,0.96), rgba(8,21,16,0.98));
+      border: 4px solid rgba(121, 75, 26, 0.72);
+      box-shadow:
+        inset 0 0 0 2px rgba(255, 220, 130, 0.1),
+        inset 0 20px 28px rgba(255,255,255,0.02),
+        0 28px 70px rgba(0,0,0,0.48);
+      backdrop-filter: blur(12px);
+    }
+
+    .app-inner::before {
+      inset: 10px;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 223, 151, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .app-inner::after {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,245,205,0.08), transparent 24%),
+        radial-gradient(circle at 50% 100%, rgba(255,196,76,0.05), transparent 28%),
+        linear-gradient(135deg, rgba(255,255,255,0.05), transparent 16%, transparent 84%, rgba(255,255,255,0.04));
+      mix-blend-mode: screen;
+    }
+
+    .title {
+      padding-top: 18px;
+      font-size: 30px;
+      letter-spacing: 4px;
+      color: var(--gold-soft);
+      text-shadow:
+        0 2px 0 rgba(96, 53, 7, 0.85),
+        0 10px 20px rgba(0,0,0,0.36),
+        0 0 24px rgba(255, 204, 98, 0.14);
+    }
+
+    .title::before {
+      content: "欢 乐 牌 局";
+      display: block;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: rgba(255, 238, 184, 0.82);
+      text-shadow: none;
+    }
+
+    .title::after {
+      width: 180px;
+      height: 18px;
+      bottom: -14px;
+      background:
+        radial-gradient(circle, rgba(255, 215, 111, 0.7) 0%, rgba(255, 215, 111, 0.16) 34%, transparent 72%);
+      filter: blur(10px);
+    }
+
+    .top-status,
+    .phase-bar,
+    .score-chip,
+    .player-mini,
+    .played-slot,
+    .play-zone,
+    .hand-wrap,
+    .rob-panel,
+    .result-panel,
+    .log,
+    .log-toggle,
+    .controls {
+      border-color: rgba(255, 223, 151, 0.16) !important;
+    }
+
+    .top-status,
+    .phase-bar {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.16)),
+        rgba(14, 25, 19, 0.5);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 12px 28px rgba(0,0,0,0.24);
+      backdrop-filter: blur(8px);
+    }
+
+    .top-status {
+      padding: 9px 12px;
+      gap: 10px;
+      border-radius: 18px;
+    }
+
+    .top-status span {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.14));
+      border: 1px solid rgba(255, 223, 151, 0.08);
+      color: rgba(255, 245, 212, 0.92);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .scoreboard {
+      gap: 10px;
+    }
+
+    .score-chip {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.18)),
+        linear-gradient(135deg, rgba(255, 213, 128, 0.06), transparent 38%),
+        rgba(11, 24, 18, 0.48);
+      border-radius: 20px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 14px 30px rgba(0,0,0,0.26);
+    }
+
+    .score-chip::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% -10%, rgba(255,255,255,0.14), transparent 34%);
+      pointer-events: none;
+    }
+
+    .score-chip::after {
+      content: "";
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 213, 116, 0.66);
+      box-shadow: 0 0 12px rgba(255, 213, 116, 0.42);
+      opacity: 0.78;
+    }
+
+    .score-chip.me {
+      background:
+        linear-gradient(180deg, rgba(255,223,151,0.12), rgba(0,0,0,0.16)),
+        linear-gradient(135deg, rgba(255, 209, 103, 0.14), transparent 42%),
+        rgba(20, 28, 18, 0.54);
+      border-color: rgba(255, 209, 103, 0.32) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        0 16px 34px rgba(0,0,0,0.26),
+        0 0 0 1px rgba(255, 209, 103, 0.08);
+    }
+
+    .score-name,
+    .score-tag,
+    .phase-text,
+    .top-status,
+    .player-count,
+    .play-type,
+    .hand-title,
+    .played-slot-title,
+    .rob-tip,
+    .result-tip {
+      color: rgba(255, 244, 212, 0.82);
+    }
+
+    .score-name,
+    .played-slot-title,
+    .hand-title,
+    .phase-text,
+    .play-zone-title,
+    .rob-title,
+    .result-title {
+      letter-spacing: 1px;
+    }
+
+    .score-value {
+      color: #fff5d0;
+      text-shadow: 0 2px 0 rgba(91, 56, 6, 0.9), 0 8px 18px rgba(0,0,0,0.28);
+    }
+
+    .score-tag {
+      background: rgba(255, 224, 146, 0.08);
+      border: 1px solid rgba(255, 224, 146, 0.08);
+      color: rgba(255, 241, 197, 0.95);
+    }
+
+    .phase-bar {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+    }
+
+    .phase-bar::before {
+      content: "底牌区";
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: rgba(255, 223, 151, 0.48);
+      pointer-events: none;
+    }
+
+    .bottom-cards {
+      gap: 8px;
+      padding-right: 44px;
+    }
+
+    .mini-card {
+      min-width: 42px;
+      height: 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 221, 145, 0.38);
+      box-shadow: 0 8px 14px rgba(0,0,0,0.24);
+    }
+
+    .board {
+      position: relative;
+      padding: 16px 14px 14px;
+      border-radius: 30px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(112, 66, 19, 0.94), rgba(59, 31, 8, 0.96));
+      border: 1px solid rgba(255, 220, 130, 0.18) !important;
+      box-shadow:
+        inset 0 0 0 2px rgba(255, 226, 148, 0.08),
+        inset 0 -14px 22px rgba(0,0,0,0.22),
+        0 24px 54px rgba(0,0,0,0.34);
+    }
+
+    .board::before {
+      content: "";
+      position: absolute;
+      inset: 14px 12px 12px;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(47, 157, 97, 0.34) 0%, rgba(18, 88, 55, 0.95) 56%, rgba(11, 63, 40, 0.98) 100%),
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.08));
+      border: 1px solid rgba(255, 228, 159, 0.12);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.03),
+        inset 0 0 28px rgba(0,0,0,0.24);
+      pointer-events: none;
+    }
+
+    .board::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 59%;
+      width: min(58%, 460px);
+      height: 136px;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      border: 1px solid rgba(255, 224, 146, 0.12);
+      box-shadow:
+        0 0 0 22px rgba(255,255,255,0.014),
+        inset 0 0 30px rgba(255, 221, 145, 0.04);
+      pointer-events: none;
+    }
+
+    .board > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .player-mini {
+      overflow: hidden;
+      padding: 14px 10px 10px;
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.16)),
+        rgba(9, 21, 16, 0.4);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.04),
+        0 14px 28px rgba(0,0,0,0.24);
+    }
+
+    .player-mini::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% -12%, rgba(255,255,255,0.14), transparent 38%);
+      pointer-events: none;
+    }
+
+    .player-head {
+      position: relative;
+      padding-top: 42px;
+    }
+
+    .player-head::before {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #fff8dd;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.14), rgba(0,0,0,0.1)),
+        linear-gradient(180deg, #597087, #2a3440);
+      border: 2px solid rgba(255, 225, 149, 0.28);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 8px 18px rgba(0,0,0,0.24);
+    }
+
+    #playerMini1 .player-head::before { content: "机1"; }
+    #playerMini2 .player-head::before { content: "机2"; }
+    #playerMini0 .player-head::before {
+      content: "你";
+      color: #553000;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.02)),
+        linear-gradient(180deg, #ffe8a6, #f3b528);
+      border-color: rgba(255, 234, 171, 0.52);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.3),
+        0 8px 18px rgba(0,0,0,0.28),
+        0 0 0 4px rgba(255, 213, 116, 0.08);
+    }
+
+    .player-mini.me-card {
+      background:
+        linear-gradient(180deg, rgba(255,229,154,0.12), rgba(0,0,0,0.12)),
+        rgba(12, 21, 16, 0.42);
+      border-color: rgba(255, 218, 132, 0.22) !important;
+    }
+
+    .player-name {
+      color: #fff2c8;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.22);
+    }
+
+    .turn-badge {
+      color: #603400;
+      background:
+        linear-gradient(180deg, #fff0bc, #ffc63c);
+      border: 1px solid rgba(255, 232, 172, 0.86);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.52),
+        0 6px 14px rgba(0,0,0,0.24),
+        0 0 16px rgba(255, 214, 111, 0.18);
+      letter-spacing: 1px;
+    }
+
+    .landlord {
+      top: -10px;
+      right: -4px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #fff8ea;
+      border: 1px solid rgba(255,255,255,0.2);
+      background:
+        linear-gradient(180deg, #ff8f72, #da2f1f);
+      box-shadow:
+        0 10px 20px rgba(0,0,0,0.24),
+        0 0 0 4px rgba(255, 104, 84, 0.08);
+    }
+
+    .back-area {
+      margin-top: 12px;
+      height: 58px;
+    }
+
+    .back-card {
+      border-radius: 9px;
+      border: 1px solid rgba(255,255,255,0.24);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.16), transparent 30%),
+        linear-gradient(135deg, #9f1414 0%, #d42f2f 45%, #7e1111 100%);
+      box-shadow:
+        0 8px 14px rgba(0,0,0,0.28),
+        inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .back-card:nth-child(odd) {
+      transform: rotate(-2deg);
+    }
+
+    .back-card:nth-child(even) {
+      transform: rotate(2deg);
+    }
+
+    .back-card::after {
+      text-shadow: 0 1px 6px rgba(0,0,0,0.24);
+    }
+
+    .play-zone {
+      margin-top: 16px;
+      padding: 12px 12px 14px;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,226,140,0.08), transparent 26%),
+        rgba(7, 18, 14, 0.2);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        inset 0 0 0 1px rgba(255,255,255,0.02),
+        0 12px 24px rgba(0,0,0,0.16);
+    }
+
+    .play-zone-title {
+      font-size: 16px;
+      color: #fff0b8;
+      letter-spacing: 2px;
+    }
+
+    .play-zone-title::before,
+    .play-zone-title::after {
+      content: "♠";
+      display: inline-block;
+      margin: 0 8px;
+      font-size: 12px;
+      vertical-align: middle;
+      color: rgba(255, 226, 145, 0.72);
+    }
+
+    .played-slot {
+      position: relative;
+      min-height: 84px;
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.18)),
+        rgba(11, 22, 17, 0.38);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.04),
+        0 10px 22px rgba(0,0,0,0.16);
+    }
+
+    .played-slot::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 12px;
+      border: 1px dashed rgba(255, 223, 151, 0.08);
+      pointer-events: none;
+    }
+
+    .played-slot.recent-play {
+      background:
+        linear-gradient(180deg, rgba(255, 202, 87, 0.14), rgba(255,255,255,0.04)),
+        rgba(11, 22, 17, 0.42);
+      border-color: rgba(255, 216, 127, 0.34) !important;
+      box-shadow:
+        0 0 0 1px rgba(255, 216, 127, 0.12),
+        0 16px 32px rgba(0,0,0,0.22),
+        0 0 24px rgba(255, 204, 87, 0.08);
+      animation: recentSeatPulse 1.45s ease-in-out infinite;
+    }
+
+    .played-slot.recent-play .played-slot-title {
+      color: #fff0b8;
+    }
+
+    @keyframes recentSeatPulse {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+
+    .played-cards {
+      min-height: 52px;
+      gap: 5px;
+    }
+
+    .show-card {
+      border: 1px solid rgba(255, 226, 155, 0.42);
+      box-shadow:
+        0 10px 18px rgba(0,0,0,0.24),
+        inset 0 1px 0 rgba(255,255,255,0.26);
+    }
+
+    .show-card:nth-child(odd) { transform: rotate(-2deg); }
+    .show-card:nth-child(even) { transform: rotate(2deg); }
+    .show-card:hover { transform: translateY(-4px) scale(1.04) rotate(0deg); }
+
+    .pass-chip {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.18)),
+        rgba(17, 28, 42, 0.78);
+      border: 1px solid rgba(255, 223, 151, 0.14);
+      color: #fff5d8 !important;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.24);
+    }
+
+    .hand-wrap {
+      position: relative;
+      overflow: hidden;
+      margin-top: 14px;
+      padding: 12px 10px 16px;
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(89, 47, 12, 0.88), rgba(36, 17, 6, 0.94));
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.03),
+        inset 0 18px 24px rgba(255,255,255,0.02),
+        0 18px 34px rgba(0,0,0,0.28);
+    }
+
+    .hand-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 221, 145, 0.08);
+      pointer-events: none;
+    }
+
+    .hand-wrap::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 48%;
+      height: 26px;
+      transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(255, 225, 146, 0.22) 0%, transparent 70%);
+      filter: blur(12px);
+      pointer-events: none;
+    }
+
+    .hand-title {
+      position: relative;
+      color: #fff1be;
+      font-size: 15px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.26);
+    }
+
+    .my-card {
+      overflow: hidden;
+      border: 1px solid rgba(255, 221, 145, 0.38);
+      box-shadow:
+        0 10px 18px rgba(0,0,0,0.24),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+      background: linear-gradient(180deg, #ffffff 0%, #f5efe1 100%);
+    }
+
+    .my-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.36), transparent);
+      pointer-events: none;
+    }
+
+    .my-card:hover {
+      box-shadow:
+        0 16px 26px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.32);
+    }
+
+    .my-card.selected {
+      border: 2px solid #ffd768;
+      box-shadow:
+        0 18px 26px rgba(0,0,0,0.34),
+        0 0 0 2px rgba(255, 215, 104, 0.14),
+        0 0 24px rgba(255, 215, 104, 0.14);
+      background: linear-gradient(180deg, #fffdf5 0%, #ffeab7 100%);
+    }
+
+    .my-card.selected.has-face {
+      border-color: #ffd768;
+      box-shadow:
+        0 18px 26px rgba(0,0,0,0.34),
+        0 0 0 2px rgba(255, 215, 104, 0.14),
+        0 0 24px rgba(255, 215, 104, 0.14);
+    }
+
+    .controls {
+      position: relative;
+      overflow: hidden;
+      margin-top: 14px;
+      padding: 14px 10px 10px;
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(82, 46, 13, 0.94), rgba(31, 15, 6, 0.96));
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.03),
+        0 18px 36px rgba(0,0,0,0.28);
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .controls::before {
+      content: "操 作 台";
+      position: absolute;
+      top: -11px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #fff0bc, #d59a1b);
+      color: #5f3300;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.24);
+    }
+
+    .controls #btnStart,
+    .controls #btnPlay {
+      grid-column: span 2;
+    }
+
+    button.action,
+    .rob-btn {
+      border: 1px solid rgba(255, 225, 149, 0.22);
+      border-bottom-width: 3px;
+      border-radius: 16px;
+      min-height: 44px;
+      padding: 11px 8px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.22);
+      letter-spacing: 1px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        0 10px 18px rgba(0,0,0,0.2);
+    }
+
+    .btn-start {
+      background: linear-gradient(180deg, #3ccf7a, #179a4c);
+    }
+
+    .btn-start.started {
+      background: linear-gradient(180deg, #8892a1, #636a76);
+    }
+
+    .btn-play,
+    .btn-rob {
+      background: linear-gradient(180deg, #ff9a3d, #d83f1d);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 12px 22px rgba(216, 63, 29, 0.28);
+    }
+
+    .btn-pass,
+    .btn-no-rob {
+      background: linear-gradient(180deg, #6e7682, #4d5562);
+    }
+
+    .btn-refresh {
+      background: linear-gradient(180deg, #4b8be8, #2563eb);
+    }
+
+    .btn-audio {
+      background: linear-gradient(180deg, #7c62d9, #5445b3);
+    }
+
+    button.action:hover,
+    .rob-btn:hover,
+    .log-toggle:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        0 14px 24px rgba(0,0,0,0.24);
+    }
+
+    button.action:active,
+    .rob-btn:active,
+    .log-toggle:active {
+      transform: translateY(1px) scale(0.985);
+    }
+
+    .rob-panel,
+    .result-panel,
+    .log {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.16)),
+        rgba(11, 23, 17, 0.54);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.04),
+        0 14px 28px rgba(0,0,0,0.22);
+    }
+
+    .rob-title,
+    .result-title {
+      color: #fff0b8;
+    }
+
+    .log-toggle {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.2)),
+        rgba(31, 16, 8, 0.78);
+      color: #fff0cb;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.04),
+        0 12px 20px rgba(0,0,0,0.22);
+    }
+
+    .log {
+      color: rgba(255, 246, 220, 0.92);
+      line-height: 1.62;
+    }
+
+    .toast {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.2)),
+        rgba(24, 15, 8, 0.9);
+      border: 1px solid rgba(255, 223, 151, 0.16);
+      border-left: 3px solid rgba(255, 223, 151, 0.42);
+      color: #fff4d2;
+    }
+
+    .player-mini.active-turn {
+      border-color: rgba(255, 223, 151, 0.42) !important;
+      background:
+        linear-gradient(180deg, rgba(255,221,145,0.14), rgba(255,255,255,0.05)),
+        rgba(9, 21, 16, 0.42);
+      box-shadow:
+        0 0 0 1px rgba(255, 223, 151, 0.14),
+        0 18px 36px rgba(0,0,0,0.26),
+        0 0 32px rgba(255, 205, 97, 0.08);
+      animation: seatGlow 1.55s ease-in-out infinite;
+    }
+
+    @keyframes seatGlow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+
+    @media (min-width: 769px) {
+      .title {
+        font-size: 36px;
+      }
+
+      .scoreboard {
+        gap: 12px;
+      }
+
+      .score-chip {
+        border-radius: 22px;
+      }
+
+      .board {
+        padding: 20px 18px 18px;
+      }
+
+      .board::after {
+        top: 60%;
+        height: 154px;
+      }
+
+      .player-head {
+        padding-top: 54px;
+      }
+
+      .player-head::before {
+        width: 48px;
+        height: 48px;
+        font-size: 15px;
+      }
+
+      .player-name {
+        font-size: 20px;
+      }
+
+      .play-zone {
+        padding: 14px 14px 16px;
+      }
+
+      .played-slot {
+        min-height: 130px;
+      }
+
+      .played-cards {
+        min-height: 82px;
+      }
+
+      .hand-wrap {
+        padding: 14px 12px 18px;
+      }
+
+      .controls {
+        grid-template-columns: repeat(7, 1fr);
+        padding: 16px 12px 12px;
+      }
+
+      .controls #btnStart,
+      .controls #btnPlay {
+        grid-column: span 1;
+      }
+
+      .controls #btnPlay {
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.18),
+          0 12px 22px rgba(216, 63, 29, 0.28),
+          0 0 18px rgba(255, 154, 61, 0.12);
+      }
+
+      button.action,
+      .rob-btn {
+        min-height: 50px;
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-inner {
+        border-width: 3px;
+        border-radius: 26px;
+      }
+
+      .app-inner::before {
+        inset: 8px;
+        border-radius: 20px;
+      }
+
+      .title {
+        font-size: 24px;
+        letter-spacing: 3px;
+      }
+
+      .title::before {
+        font-size: 10px;
+        letter-spacing: 5px;
+        margin-bottom: 6px;
+      }
+
+      .top-status,
+      .phase-bar,
+      .score-chip,
+      .play-zone,
+      .hand-wrap,
+      .rob-panel,
+      .controls,
+      .log-toggle,
+      .log,
+      .result-panel {
+        border-radius: 16px;
+      }
+
+      .phase-bar::before {
+        top: 8px;
+        right: 10px;
+        font-size: 10px;
+      }
+
+      .bottom-cards {
+        padding-right: 36px;
+      }
+
+      .board {
+        border-radius: 22px;
+      }
+
+      .board::before {
+        inset: 10px 8px 8px;
+        border-radius: 16px;
+      }
+
+      .board::after {
+        width: 76%;
+        height: 84px;
+        top: 60%;
+      }
+
+      .player-mini {
+        border-radius: 16px;
+      }
+
+      .player-head {
+        padding-top: 36px;
+      }
+
+      .player-head::before {
+        width: 34px;
+        height: 34px;
+        font-size: 11px;
+      }
+
+      .landlord {
+        font-size: 10px;
+        padding: 4px 8px;
+      }
+
+      .play-zone-title {
+        font-size: 13px;
+      }
+
+      .played-slot::after {
+        inset: 5px;
+        border-radius: 8px;
+      }
+
+      .controls {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 7px;
+      }
+
+      .controls::before {
+        top: -10px;
+        font-size: 10px;
+        letter-spacing: 2px;
+      }
+
+      button.action,
+      .rob-btn {
+        min-height: 40px;
+        font-size: 12px;
+        border-radius: 13px;
+      }
+    }
+
+
+    /* --- 修复未选中牌面贴图 + 中式牌馆元素 --- */
+    .mini-card,
+    .show-card,
+    .back-card {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .my-card {
+      position: absolute;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .mini-card.has-face,
+    .show-card.has-face,
+    .my-card.has-face {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-origin: border-box;
+    }
+
+    .mini-card.has-face::before,
+    .show-card.has-face::before,
+    .my-card.has-face::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border-radius: inherit;
+      border: 1px solid rgba(195, 146, 62, 0.88);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 249, 223, 0.68),
+        inset 0 10px 18px rgba(255,255,255,0.10),
+        inset 0 -10px 18px rgba(94, 48, 17, 0.08);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .mini-card.has-face::after,
+    .show-card.has-face::after,
+    .my-card.has-face::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 3px;
+      transform: translateX(-50%);
+      width: 48%;
+      height: 8px;
+      border-radius: 0 0 8px 8px;
+      background:
+        linear-gradient(135deg, transparent 0 18%, rgba(138, 38, 24, 0.9) 18% 50%, transparent 50% 82%, rgba(138, 38, 24, 0.9) 82% 100%),
+        linear-gradient(180deg, rgba(247, 220, 151, 0.96), rgba(175, 110, 33, 0.92));
+      clip-path: polygon(0 100%, 10% 36%, 24% 100%, 38% 36%, 50% 100%, 62% 36%, 76% 100%, 90% 36%, 100% 100%);
+      opacity: 0.9;
+      pointer-events: none;
+      z-index: 1;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.28);
+    }
+
+    .my-card.selected.has-face::before {
+      border-color: rgba(59, 130, 246, 0.85);
+      box-shadow:
+        inset 0 0 0 1px rgba(219, 234, 254, 0.95),
+        inset 0 10px 18px rgba(255,255,255,0.18),
+        0 0 0 1px rgba(59,130,246,0.18);
+    }
+
+    .back-card {
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255, 232, 165, 0.24), transparent 32%),
+        linear-gradient(145deg, #7f1d1d 0%, #b91c1c 26%, #8b1e12 58%, #5f120f 100%);
+      border: 1px solid rgba(255, 228, 184, 0.36);
+      box-shadow:
+        0 6px 12px rgba(0,0,0,0.24),
+        inset 0 0 0 1px rgba(255, 241, 214, 0.14);
+    }
+
+    .back-card::before {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 6px;
+      background:
+        repeating-linear-gradient(0deg, rgba(245, 222, 179, 0.08) 0 2px, transparent 2px 8px),
+        repeating-linear-gradient(90deg, rgba(245, 222, 179, 0.08) 0 2px, transparent 2px 8px);
+      border: 1px solid rgba(243, 211, 144, 0.32);
+      box-shadow: inset 0 0 0 1px rgba(123, 37, 22, 0.35);
+      pointer-events: none;
+    }
+
+    .back-card::after {
+      content: "牌";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 244, 214, 0.94);
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-shadow: 0 1px 4px rgba(69, 10, 10, 0.35);
+    }
+
+    .landlord {
+      background:
+        linear-gradient(180deg, #f97316 0%, #dc2626 100%);
+      border: 1px solid rgba(255, 225, 158, 0.45);
+      box-shadow:
+        0 6px 14px rgba(0,0,0,0.22),
+        inset 0 0 0 1px rgba(255, 246, 214, 0.18);
+    }
+
+
+    /* --- 第二轮修正：手牌可见性 / 操作台避让 / 更明显的中式建筑元素 --- */
+    .app-inner::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 28px;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(255,216,133,0.08), transparent 14%),
+        radial-gradient(circle at 88% 10%, rgba(255,216,133,0.08), transparent 14%),
+        radial-gradient(circle at 12% 90%, rgba(255,216,133,0.07), transparent 14%),
+        radial-gradient(circle at 88% 90%, rgba(255,216,133,0.07), transparent 14%);
+      box-shadow:
+        inset 0 0 0 2px rgba(133, 86, 24, 0.46),
+        inset 0 0 0 10px rgba(20, 36, 24, 0.14);
+    }
+
+    .board,
+    .hand-wrap,
+    .controls,
+    .phase-bar,
+    .rob-panel,
+    .log-toggle,
+    .log,
+    .score-chip {
+      position: relative;
+      z-index: 1;
+    }
+
+    .board::before,
+    .hand-wrap::before,
+    .controls::after {
+      background-blend-mode: screen;
+    }
+
+    .board::after {
+      opacity: 0.65;
+    }
+
+    .player-mini::after,
+    .played-slot::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 12px;
+      pointer-events: none;
+      border: 1px solid rgba(214, 172, 87, 0.10);
+      background:
+        linear-gradient(90deg, transparent 0 8%, rgba(214,172,87,0.10) 8% 9%, transparent 9% 91%, rgba(214,172,87,0.10) 91% 92%, transparent 92% 100%),
+        linear-gradient(0deg, transparent 0 8%, rgba(214,172,87,0.08) 8% 9%, transparent 9% 91%, rgba(214,172,87,0.08) 91% 92%, transparent 92% 100%);
+      opacity: 0.85;
+    }
+
+    .play-zone-title::before,
+    .play-zone-title::after,
+    .hand-title::before,
+    .hand-title::after {
+      content: "✦";
+      display: inline-block;
+      color: rgba(241, 209, 126, 0.86);
+      font-size: 11px;
+      margin: 0 10px;
+      transform: translateY(-1px);
+    }
+
+    .hand-wrap {
+      overflow: visible;
+      padding-top: 14px;
+      padding-bottom: 22px;
+    }
+
+    .hand-wrap::before {
+      inset: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 215, 120, 0.14);
+      background:
+        linear-gradient(90deg, rgba(255,215,120,0.06), transparent 12%, transparent 88%, rgba(255,215,120,0.06)),
+        linear-gradient(180deg, rgba(130,69,22,0.22), transparent 26%, transparent 74%, rgba(130,69,22,0.24));
+    }
+
+    .hand-area {
+      min-height: 176px !important;
+      height: 176px !important;
+      overflow: visible !important;
+      padding: 10px 8px 28px;
+    }
+
+    .my-card {
+      width: 60px;
+      height: 86px;
+    }
+
+    .my-card.has-face {
+      background-size: contain !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+      background-color: #fff9ef !important;
+    }
+
+    .my-card::before {
+      z-index: 1;
+    }
+
+    .my-card.has-face::before,
+    .my-card.has-face::after {
+      z-index: 2;
+    }
+
+    .controls {
+      padding-top: 34px;
+      overflow: visible;
+    }
+
+    .controls::before {
+      top: 8px !important;
+      transform: translateX(-50%);
+      z-index: 2;
+      letter-spacing: 4px;
+      padding: 4px 14px;
+      background: linear-gradient(180deg, #ffeab0, #d7a23a);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.22);
+    }
+
+    .controls::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 18px;
+      pointer-events: none;
+      border: 1px solid rgba(255, 220, 140, 0.08);
+      background:
+        linear-gradient(90deg, rgba(255,215,120,0.05), transparent 15%, transparent 85%, rgba(255,215,120,0.05));
+    }
+
+    .back-card {
+      border-radius: 9px;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255, 229, 154, 0.20), transparent 24%),
+        linear-gradient(145deg, #6f140f 0%, #9f1c16 30%, #771712 62%, #50100d 100%);
+    }
+
+    .back-card::before {
+      inset: 4px;
+      border-radius: 7px;
+      background:
+        repeating-linear-gradient(90deg, rgba(240,218,167,0.10) 0 2px, transparent 2px 9px),
+        repeating-linear-gradient(0deg, rgba(240,218,167,0.08) 0 2px, transparent 2px 9px),
+        linear-gradient(180deg, rgba(122,25,18,0.22), rgba(255,231,176,0.04));
+      border: 1px solid rgba(243, 211, 144, 0.26);
+    }
+
+    .back-card::after {
+      content: "牌";
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: rgba(255, 245, 219, 0.96);
+      text-shadow: 0 1px 5px rgba(58, 10, 10, 0.45);
+    }
+
+    @media (max-width: 768px) {
+      .hand-area {
+        min-height: 122px !important;
+        height: 122px !important;
+        padding-bottom: 18px;
+      }
+
+      .my-card {
+        width: 44px;
+        height: 64px;
+      }
+
+      .controls {
+        padding-top: 30px;
+      }
+
+      .controls::before {
+        top: 6px !important;
+        letter-spacing: 2px;
+      }
+    }
+
+
+    /* --- 第三轮修正：手牌回到牌桌，不再跑路 --- */
+    .hand-area {
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    .my-card {
+      position: absolute !important;
+      display: flex;
+      left: 0;
+      top: 0;
+    }
+
+    .mini-card,
+    .show-card,
+    .back-card {
+      position: relative;
+    }
+
+
+    /* --- 第四轮修正：AI 手牌叠放 + 选中牌不再被裁 --- */
+    .player-mini {
+      overflow: hidden;
+    }
+
+    .back-area {
+      position: relative;
+      width: 100%;
+      height: 64px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .back-card {
+      position: absolute !important;
+      width: 40px;
+      height: 56px;
+      transform-origin: center bottom;
+      transition: left .18s ease, top .18s ease, transform .18s ease;
+      z-index: 1;
+    }
+
+    .hand-wrap {
+      overflow: visible !important;
+      padding-top: 16px;
+      padding-bottom: 20px;
+    }
+
+    .hand-title {
+      position: relative;
+      z-index: 5;
+      margin-bottom: 14px;
+    }
+
+    .hand-area {
+      position: relative !important;
+      min-height: 196px !important;
+      height: 196px !important;
+      overflow: visible !important;
+      z-index: 3;
+      padding: 18px 10px 34px;
+    }
+
+    .my-card {
+      position: absolute !important;
+      will-change: transform, top, left;
+    }
+
+    .my-card.selected {
+      z-index: 1200 !important;
+    }
+
+    @media (max-width: 768px) {
+      .back-area {
+        height: 54px;
+      }
+
+      .back-card {
+        width: 32px;
+        height: 46px;
+      }
+
+      .hand-area {
+        min-height: 138px !important;
+        height: 138px !important;
+        padding: 12px 6px 20px;
+      }
+    }
+
+
+    /* --- 第五轮修正：出牌区对位 / 选牌过渡柔化 / 宫殿边框 --- */
+    .app-inner {
+      padding: 10px 0 14px;
+      border-radius: 30px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,222,152,0.10), transparent 18%),
+        radial-gradient(circle at 50% 100%, rgba(255,222,152,0.06), transparent 16%);
+      box-shadow:
+        0 0 0 1px rgba(255, 222, 157, 0.08),
+        0 28px 72px rgba(0,0,0,0.34);
+      overflow: hidden;
+    }
+
+    .app-inner::before {
+      inset: 10px;
+      border-radius: 24px;
+      border: 1px solid rgba(235, 196, 113, 0.26);
+      background:
+        linear-gradient(90deg, rgba(219,172,82,0.18), transparent 8%, transparent 92%, rgba(219,172,82,0.18)),
+        linear-gradient(180deg, rgba(219,172,82,0.14), transparent 10%, transparent 90%, rgba(219,172,82,0.14));
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 241, 207, 0.08),
+        inset 0 0 0 10px rgba(84, 50, 16, 0.10);
+    }
+
+    .app-inner::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 30px;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,0) 0 4%, rgba(244,201,104,0.18) 4% 4.4%, rgba(0,0,0,0) 4.4% 95.6%, rgba(244,201,104,0.18) 95.6% 96%, rgba(0,0,0,0) 96%),
+        linear-gradient(180deg, rgba(0,0,0,0) 0 3.6%, rgba(244,201,104,0.18) 3.6% 4%, rgba(0,0,0,0) 4% 96%, rgba(244,201,104,0.18) 96% 96.4%, rgba(0,0,0,0) 96.4%),
+        radial-gradient(circle at 6% 6%, rgba(255, 221, 146, 0.26) 0 1.1%, transparent 1.2%),
+        radial-gradient(circle at 94% 6%, rgba(255, 221, 146, 0.26) 0 1.1%, transparent 1.2%),
+        radial-gradient(circle at 6% 94%, rgba(255, 221, 146, 0.26) 0 1.1%, transparent 1.2%),
+        radial-gradient(circle at 94% 94%, rgba(255, 221, 146, 0.26) 0 1.1%, transparent 1.2%);
+      opacity: 0.95;
+      z-index: 0;
+    }
+
+    .title {
+      position: relative;
+      letter-spacing: 4px;
+      text-shadow:
+        0 2px 0 rgba(70, 40, 8, 0.5),
+        0 10px 24px rgba(0,0,0,0.30);
+    }
+
+    .title::before,
+    .title::after {
+      content: "宫";
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%) scale(0.72);
+      color: rgba(247, 217, 132, 0.18);
+      font-size: 46px;
+      font-weight: 900;
+      pointer-events: none;
+    }
+
+    .title::before { left: 18%; }
+    .title::after { right: 18%; }
+
+    .played-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .played-slot {
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .played-slot::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(240, 210, 132, 0.08);
+      background:
+        linear-gradient(90deg, rgba(240,210,132,0.05), transparent 16%, transparent 84%, rgba(240,210,132,0.05)),
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 30%);
+      pointer-events: none;
+    }
+
+    .played-cards {
+      min-height: 72px;
+      align-content: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+
+    .show-card {
+      width: 42px;
+      height: 60px;
+      animation: playDrop .28s cubic-bezier(.2,.8,.2,1);
+    }
+
+    @keyframes playDrop {
+      from { opacity: 0; transform: translateY(-10px) scale(.92); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .my-card {
+      transition:
+        top .30s cubic-bezier(.22,.8,.24,1),
+        left .30s cubic-bezier(.22,.8,.24,1),
+        transform .32s cubic-bezier(.22,.8,.24,1),
+        box-shadow .24s ease,
+        border-color .24s ease,
+        filter .24s ease !important;
+    }
+
+    .my-card:hover {
+      filter: saturate(1.04) brightness(1.02);
+    }
+
+    .my-card.selected {
+      box-shadow:
+        0 18px 30px rgba(0,0,0,0.24),
+        0 10px 18px rgba(255, 202, 103, 0.10);
+    }
+
+    .board,
+    .hand-wrap,
+    .controls,
+    .phase-bar,
+    .rob-panel,
+    .log-toggle,
+    .log,
+    .scoreboard,
+    .top-status {
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 768px) {
+      .app-inner {
+        border-radius: 22px;
+        padding-top: 8px;
+      }
+
+      .app-inner::before {
+        inset: 6px;
+        border-radius: 18px;
+      }
+
+      .title::before,
+      .title::after {
+        display: none;
+      }
+
+      .played-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .played-slot {
+        min-height: 84px;
+      }
+
+      .show-card {
+        width: 36px;
+        height: 52px;
+      }
+    }
+
+
+    /* --- 第六轮修正：宫殿参考图融入 / 去掉怪字 / 选中牌不挡后牌 --- */
+    body {
+      background:
+        radial-gradient(circle at 50% -8%, rgba(255,213,122,0.16), transparent 22%),
+        radial-gradient(circle at 50% 35%, #0e5b39 0%, #0a3e2a 42%, #06271e 100%);
+    }
+
+    .app-inner {
+      padding-top: 14px;
+      border-radius: 34px;
+      background:
+        linear-gradient(180deg, rgba(255,223,160,0.10), rgba(0,0,0,0) 18%),
+        linear-gradient(180deg, rgba(8, 27, 20, 0.08), rgba(8, 27, 20, 0.28)),
+        radial-gradient(circle at 50% 0%, rgba(255,214,127,0.12), transparent 20%);
+      box-shadow:
+        0 0 0 1px rgba(255, 214, 127, 0.08),
+        0 28px 72px rgba(0,0,0,0.34);
+      overflow: hidden;
+    }
+
+    .app-inner::before {
+      inset: 12px;
+      border-radius: 26px;
+      border: 1px solid rgba(228, 184, 96, 0.34);
+      background:
+        linear-gradient(90deg, rgba(228,184,96,0.15), transparent 7%, transparent 93%, rgba(228,184,96,0.15)),
+        linear-gradient(180deg, rgba(228,184,96,0.14), transparent 8%, transparent 92%, rgba(228,184,96,0.14));
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 239, 204, 0.08),
+        inset 0 0 0 26px rgba(88, 51, 12, 0.04);
+    }
+
+    .app-inner::after {
+      content: "";
+      position: absolute;
+      inset: 18px 18px auto 18px;
+      height: 180px;
+      border-radius: 22px 22px 34px 34px;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        linear-gradient(180deg, rgba(5,16,12,0.18), rgba(5,16,12,0.58)),
+        url('./palace_reference.png') center top / cover no-repeat;
+      opacity: 0.38;
+      filter: saturate(1.05) contrast(1.02);
+      box-shadow:
+        inset 0 -28px 40px rgba(5,16,12,0.72),
+        inset 0 1px 0 rgba(255,232,181,0.12);
+      -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,1), rgba(0,0,0,0.18) 78%, rgba(0,0,0,0));
+              mask-image: linear-gradient(180deg, rgba(0,0,0,1), rgba(0,0,0,0.18) 78%, rgba(0,0,0,0));
+    }
+
+    .app-inner .palace-corners,
+    .app-inner .palace-eaves {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .title {
+      position: relative;
+      z-index: 1;
+      padding-top: 18px;
+      letter-spacing: 3px;
+      text-shadow:
+        0 2px 0 rgba(90, 47, 7, 0.45),
+        0 10px 22px rgba(0,0,0,0.26);
+    }
+
+    .title::before {
+      content: "欢 乐 牌 局" !important;
+      display: block;
+      margin-bottom: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: rgba(255, 239, 194, 0.88);
+      text-shadow: none;
+    }
+
+    .title::after {
+      content: "" !important;
+      width: 180px;
+      height: 18px;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      position: absolute;
+      background:
+        radial-gradient(circle, rgba(255, 215, 111, 0.7) 0%, rgba(255, 215, 111, 0.16) 34%, transparent 72%);
+      filter: blur(10px);
+    }
+
+    .top-status,
+    .scoreboard,
+    .phase-bar,
+    .board,
+    .rob-panel,
+    .hand-wrap,
+    .controls,
+    .log-toggle,
+    .log {
+      position: relative;
+      z-index: 1;
+    }
+
+    .board,
+    .hand-wrap,
+    .controls,
+    .phase-bar,
+    .rob-panel,
+    .log-toggle,
+    .log,
+    .score-chip {
+      background-color: rgba(8, 24, 18, 0.52);
+      border-color: rgba(235, 195, 112, 0.15) !important;
+    }
+
+    .board {
+      background:
+        linear-gradient(180deg, rgba(255,226,158,0.06), rgba(0,0,0,0.10)),
+        linear-gradient(180deg, rgba(9,32,22,0.88), rgba(14,58,38,0.72));
+    }
+
+    .hand-wrap {
+      background:
+        linear-gradient(180deg, rgba(148, 70, 15, 0.34), rgba(69, 25, 5, 0.72)),
+        linear-gradient(180deg, rgba(255,213,129,0.06), rgba(0,0,0,0));
+      box-shadow:
+        inset 0 1px 0 rgba(255,228,163,0.10),
+        inset 0 -1px 0 rgba(53, 17, 3, 0.55),
+        0 18px 36px rgba(0,0,0,0.24);
+    }
+
+    .hand-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 20px;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255,225,156,0.06), transparent 22%),
+        linear-gradient(90deg, rgba(255,225,156,0.05), transparent 14%, transparent 86%, rgba(255,225,156,0.05));
+      border: 1px solid rgba(229, 184, 100, 0.12);
+    }
+
+    .controls {
+      background:
+        linear-gradient(180deg, rgba(148, 70, 15, 0.24), rgba(46, 19, 7, 0.62)),
+        rgba(10, 20, 16, 0.42);
+    }
+
+    .my-card.selected {
+      border-color: rgba(255, 210, 106, 0.95) !important;
+      box-shadow:
+        0 14px 22px rgba(0,0,0,0.22),
+        0 0 0 2px rgba(255, 217, 129, 0.22) !important;
+    }
+
+    .my-card.selected.has-face {
+      box-shadow:
+        0 14px 22px rgba(0,0,0,0.22),
+        0 0 0 2px rgba(255, 217, 129, 0.22) !important;
+      border-color: rgba(255, 210, 106, 0.95) !important;
+    }
+
+    .my-card:hover {
+      filter: saturate(1.03) brightness(1.02);
+    }
+
+    .player-mini::before,
+    .played-slot::before,
+    .score-chip::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 14px;
+      pointer-events: none;
+      border: 1px solid rgba(226, 181, 97, 0.08);
+      background:
+        linear-gradient(90deg, rgba(226,181,97,0.05), transparent 10%, transparent 90%, rgba(226,181,97,0.05)),
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 28%);
+    }
+
+    @media (max-width: 768px) {
+      .app-inner::after {
+        height: 110px;
+        inset: 10px 10px auto 10px;
+        border-radius: 18px 18px 26px 26px;
+      }
+    }
+
+
+    .palace-eaves::before,
+    .palace-eaves::after {
+      content: "";
+      position: absolute;
+      top: 8px;
+      width: 98px;
+      height: 66px;
+      background:
+        linear-gradient(180deg, rgba(255,225,155,0.16), rgba(255,225,155,0.02)),
+        linear-gradient(180deg, #7d2f12, #4d1808);
+      clip-path: polygon(0 100%, 12% 54%, 24% 50%, 34% 24%, 50% 8%, 66% 24%, 76% 50%, 88% 54%, 100% 100%);
+      opacity: 0.42;
+      filter: drop-shadow(0 8px 10px rgba(0,0,0,0.24));
+    }
+    .palace-eaves::before { left: 26px; transform: scaleX(-1); }
+    .palace-eaves::after { right: 26px; }
+
+    .palace-corners::before,
+    .palace-corners::after {
+      content: "";
+      position: absolute;
+      bottom: 18px;
+      width: 74px;
+      height: 74px;
+      border: 2px solid rgba(229, 184, 100, 0.22);
+      border-top: none;
+      border-left: none;
+      border-radius: 0 0 22px 0;
+      opacity: 0.85;
+    }
+    .palace-corners::before { left: 18px; transform: scaleX(-1); }
+    .palace-corners::after { right: 18px; }
+
+    .palace-corners {
+      background:
+        radial-gradient(circle at 18px 18px, rgba(255, 223, 146, 0.22) 0 8px, transparent 9px),
+        radial-gradient(circle at calc(100% - 18px) 18px, rgba(255, 223, 146, 0.22) 0 8px, transparent 9px),
+        linear-gradient(90deg, transparent 0 22px, rgba(229,184,100,0.14) 22px 24px, transparent 24px calc(100% - 24px), rgba(229,184,100,0.14) calc(100% - 24px) calc(100% - 22px), transparent calc(100% - 22px)),
+        linear-gradient(180deg, transparent 0 24px, rgba(229,184,100,0.14) 24px 26px, transparent 26px calc(100% - 26px), rgba(229,184,100,0.14) calc(100% - 26px) calc(100% - 24px), transparent calc(100% - 24px));
+      opacity: 0.7;
+    }
+
   </style>
 </head>
 <body class="show-log">
   <div class="app">
-    <div class="app-inner">
+    <div class="app-inner"><div class="palace-eaves" aria-hidden="true"></div><div class="palace-corners" aria-hidden="true"></div>
       <div class="toast-wrap" id="toastWrap"></div>
       <div class="title">斗地主</div>
 
@@ -1104,7 +3201,7 @@
 
       <div class="board">
         <div class="ai-row">
-          <div class="player-mini">
+          <div class="player-mini" id="playerMini1">
             <div id="landlord1"></div>
             <div class="player-head">
               <div class="player-name">电脑1</div>
@@ -1114,7 +3211,7 @@
             <div class="back-area" id="ai1Backs"></div>
           </div>
 
-          <div class="player-mini">
+          <div class="player-mini" id="playerMini2">
             <div id="landlord2"></div>
             <div class="player-head">
               <div class="player-name">电脑2</div>
@@ -1124,7 +3221,7 @@
             <div class="back-area" id="ai2Backs"></div>
           </div>
 
-          <div class="player-mini me-card">
+          <div class="player-mini me-card" id="playerMini0">
             <div id="landlord0"></div>
             <div class="player-head">
               <div class="player-name">你</div>
@@ -1139,17 +3236,17 @@
           <div class="play-zone-title">本轮出牌区</div>
 
           <div class="played-grid">
-            <div class="played-slot">
+            <div class="played-slot" id="playedSlot1">
               <div class="played-slot-title">电脑1</div>
               <div class="played-cards" id="playedLeft"></div>
             </div>
 
-            <div class="played-slot">
+            <div class="played-slot" id="playedSlot0">
               <div class="played-slot-title">你</div>
               <div class="played-cards" id="playedMid"></div>
             </div>
 
-            <div class="played-slot">
+            <div class="played-slot" id="playedSlot2">
               <div class="played-slot-title">电脑2</div>
               <div class="played-cards" id="playedRight"></div>
             </div>
@@ -1223,9 +3320,13 @@
     function applyCardFace(el, name) {
       const src = getCardImage(name);
       const normalized = normalizePlayedText(name);
+      el.dataset.cardName = normalized || "";
       if (normalized === "过牌") {
         el.classList.remove("has-face");
         el.style.backgroundImage = "";
+        el.style.backgroundSize = "";
+        el.style.backgroundPosition = "";
+        el.style.backgroundRepeat = "";
         el.textContent = "过牌";
         el.removeAttribute("aria-label");
         el.title = "过牌";
@@ -1234,12 +3335,18 @@
       if (src && shouldShowFace()) {
         el.classList.add("has-face");
         el.style.backgroundImage = `url(${src})`;
+        el.style.backgroundSize = "cover";
+        el.style.backgroundPosition = "center";
+        el.style.backgroundRepeat = "no-repeat";
         el.textContent = name;
         el.setAttribute("aria-label", name);
         el.title = name;
       } else {
         el.classList.remove("has-face");
         el.style.backgroundImage = "";
+        el.style.backgroundSize = "";
+        el.style.backgroundPosition = "";
+        el.style.backgroundRepeat = "";
         el.textContent = name;
         el.setAttribute("aria-label", name);
         el.title = name;
@@ -1427,6 +3534,10 @@
         const box = document.getElementById(id);
         box.innerHTML = "";
       });
+      [0, 1, 2].forEach(i => {
+        const slot = document.getElementById("playedSlot" + i);
+        if (slot) slot.classList.remove("recent-play");
+      });
     }
 
     function getState() {
@@ -1456,15 +3567,25 @@
 
     function renderBackCards(containerId, count) {
       const box = document.getElementById(containerId);
+      if (!box) return;
       box.innerHTML = "";
-      const showCount = Math.min(count, window.innerWidth >= 769 ? 10 : 7);
-      const step = window.innerWidth >= 769 ? 8 : 5;
 
-      for (let i = 0; i < showCount; i++) {
+      const total = Math.max(0, Number(count) || 0);
+      if (!total) return;
+
+      const isDesktop = window.innerWidth >= 769;
+      const cardWidth = isDesktop ? 40 : 32;
+      const usableWidth = Math.max(box.clientWidth - cardWidth - 8, 12);
+      const step = total <= 1 ? 0 : Math.max(2, Math.min(isDesktop ? 12 : 8, Math.floor(usableWidth / (total - 1))));
+
+      for (let i = 0; i < total; i++) {
         const div = document.createElement("div");
+        const offsetFromCenter = i - (total - 1) / 2;
         div.className = "back-card";
         div.style.left = (i * step) + "px";
-        div.style.top = (i % 2) + "px";
+        div.style.top = (Math.abs(offsetFromCenter) > total / 3 ? 6 : 2) + "px";
+        div.style.transform = `rotate(${offsetFromCenter * (isDesktop ? 1.6 : 1.2)}deg)`;
+        div.style.zIndex = String(i + 1);
         box.appendChild(div);
       }
     }
@@ -1477,8 +3598,8 @@
 
     function renderPlayedArea(playerIndex, text) {
       const map = {
-        0: document.getElementById("playedMid"),
         1: document.getElementById("playedLeft"),
+        0: document.getElementById("playedMid"),
         2: document.getElementById("playedRight")
       };
 
@@ -1495,18 +3616,21 @@
         pass.className = "pass-chip";
         pass.textContent = "过牌";
         target.appendChild(pass);
+        markRecentPlay(playerIndex);
         return;
       }
 
       const cards = splitCards(normalized);
       if (!cards.length) return;
 
-      cards.forEach(card => {
+      cards.forEach((card, idx) => {
         const div = document.createElement("div");
         div.className = "show-card";
+        div.style.animationDelay = (idx * 45) + "ms";
         applyCardFace(div, card);
         target.appendChild(div);
       });
+      markRecentPlay(playerIndex);
     }
 
     function renderBottomCards(state) {
@@ -1541,6 +3665,24 @@
       }
     }
 
+
+    function markRecentPlay(playerIndex) {
+      [0, 1, 2].forEach(i => {
+        const slot = document.getElementById("playedSlot" + i);
+        if (!slot) return;
+        slot.classList.toggle("recent-play", i === playerIndex);
+      });
+    }
+
+    function syncTurnHighlights(state) {
+      [0, 1, 2].forEach(i => {
+        const panel = document.getElementById("playerMini" + i);
+        if (!panel) return;
+        const active = !!state && state.landlordRobbed && !state.gameOver && state.currentPlayer === i;
+        panel.classList.toggle("active-turn", active);
+      });
+    }
+
     function renderStatus(state) {
       document.getElementById("myCount").textContent = `剩余 ${state.myCardCount} 张`;
       document.getElementById("ai1Count").textContent = `剩余 ${state.ai1CardCount} 张`;
@@ -1565,6 +3707,7 @@
       setTurn("ai2Turn", state.currentPlayer === 2 && state.landlordRobbed);
 
       setLandlord(state.landlordIndex);
+      syncTurnHighlights(state);
       renderBackCards("ai1Backs", state.ai1CardCount);
       renderBackCards("ai2Backs", state.ai2CardCount);
       renderBottomCards(state);
@@ -1736,21 +3879,41 @@
     }
 
     function renderHand(state) {
-      handArea.innerHTML = "";
-      if (!state.hand || !state.hand.length) return;
+      if (!state || !state.hand || !state.hand.length) {
+        handArea.innerHTML = "";
+        return;
+      }
 
       const metrics = getCardMetrics();
       const cardWidth = metrics.cardWidth;
-      const overlap = Math.min(
+      const selectedLift = Math.max(12, metrics.baseTop - metrics.selectedTop + 4);
+      const handWidth = Math.max(handArea.clientWidth - 16, cardWidth);
+      const selectedList = Array.from(selectedIndices).sort((a,b)=>a-b);
+      const gapBoost = window.innerWidth >= 769 ? Math.max(8, Math.round(cardWidth * 0.18)) : Math.max(4, Math.round(cardWidth * 0.10));
+      const rawOverlap = Math.min(
         metrics.maxOverlap,
         Math.max(
           metrics.minOverlap,
-          Math.floor((handArea.clientWidth - cardWidth) / Math.max(1, state.hand.length - 1))
+          Math.floor((handWidth - cardWidth) / Math.max(1, state.hand.length - 1))
         )
       );
 
-      const totalWidth = cardWidth + overlap * (state.hand.length - 1);
-      const startLeft = Math.max(0, Math.floor((handArea.clientWidth - totalWidth) / 2));
+      const extraWidth = selectedList.length * gapBoost * 2;
+      const overlap = Math.max(metrics.minOverlap, rawOverlap - Math.ceil(extraWidth / Math.max(1, state.hand.length - 1)));
+
+      const positions = [];
+      let cursor = 0;
+      for (let i = 0; i < state.hand.length; i++) {
+        const prevSelected = selectedIndices.has(i - 1);
+        const currentSelected = selectedIndices.has(i);
+        if (i > 0) cursor += overlap;
+        if (prevSelected) cursor += gapBoost;
+        if (currentSelected) cursor += gapBoost;
+        positions.push(cursor);
+      }
+
+      const totalWidth = cardWidth + (positions.length ? positions[positions.length - 1] : 0);
+      const startLeft = Math.max(0, Math.floor((handWidth - totalWidth) / 2));
 
       const invalid = [];
       selectedIndices.forEach(index => {
@@ -1763,29 +3926,47 @@
         document.getElementById("playTypeText").textContent = hint;
       }
 
-      state.hand.forEach((cardName, index) => {
-        const div = document.createElement("div");
-        const canSelect = state.landlordRobbed && state.currentPlayer === 0 && !state.gameOver;
+      const canSelect = state.landlordRobbed && state.currentPlayer === 0 && !state.gameOver;
+      const existing = Array.from(handArea.querySelectorAll(".my-card"));
 
-        div.className = "my-card" + (selectedIndices.has(index) ? " selected" : "");
-        div.style.left = (startLeft + index * overlap) + "px";
-        div.style.top = selectedIndices.has(index)
-          ? metrics.selectedTop + "px"
-          : metrics.baseTop + "px";
-        applyCardFace(div, cardName);
+      while (existing.length > state.hand.length) {
+        const node = existing.pop();
+        node && node.remove();
+      }
+
+      state.hand.forEach((cardName, index) => {
+        let div = existing[index];
+        if (!div) {
+          div = document.createElement("div");
+          div.className = "my-card";
+          handArea.appendChild(div);
+          existing[index] = div;
+        }
+
+        const selected = selectedIndices.has(index);
+        const rotate = (index - (state.hand.length - 1) / 2) * (window.innerWidth >= 769 ? 0.55 : 0.22);
+
+        div.className = "my-card" + (selected ? " selected" : "");
+        div.style.left = (startLeft + positions[index]) + "px";
+        div.style.top = metrics.baseTop + "px";
+        div.style.width = cardWidth + "px";
+        div.style.height = Math.round(cardWidth * 1.43) + "px";
+        div.style.transform = selected
+          ? `translateY(-${selectedLift}px) rotate(${rotate}deg) scale(1.015)`
+          : `translateY(0) rotate(${rotate}deg) scale(1)`;
         div.style.cursor = canSelect ? "pointer" : "default";
-        div.style.opacity = canSelect ? "1" : "0.96";
+        div.style.opacity = canSelect ? "1" : "0.98";
+        div.style.zIndex = selected ? (1200 + index) : (100 + index);
+        div.style.transitionDelay = "0ms";
+
+        applyCardFace(div, cardName);
 
         div.onclick = () => {
           if (!canSelect) return;
-
           if (selectedIndices.has(index)) selectedIndices.delete(index);
           else selectedIndices.add(index);
-
           renderHand(gameState);
         };
-
-        handArea.appendChild(div);
       });
     }
 
