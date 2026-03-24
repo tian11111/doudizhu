@@ -25,7 +25,7 @@ typedef enum {
     ROCKET            // 王炸（大小王）
 } PlayType;
 
-// 队伍枚举（新增：地主队/农民队）
+// 队伍枚举（地主队/农民队）
 typedef enum {
     TEAM_LANDLORD,    // 地主队
     TEAM_FARMER       // 农民队
@@ -91,8 +91,8 @@ bool gameOver;
 char lastPlayedText[256];
 int landlordIndex = -1;
 char buffer[4096];
-bool landlordRobbed = false;    // 抢地主是否完成（新增）
-Card landlordCards[3];          // 地主底牌（新增）
+bool landlordRobbed = false;    // 抢地主是否完成
+Card landlordCards[3];          // 地主底牌
 
 // 函数声明
 void clearLastPlayedText();
@@ -188,7 +188,7 @@ void shuffleDeck(Deck* deck) {
     }
 }
 
-// 发牌（新增：预留3张地主底牌）
+// 发牌
 void dealCards(Deck* deck, Player players[]) {
     // 先给3个玩家发17张牌
     for (int cardIdx = 0; cardIdx < 51; cardIdx++) {
@@ -619,7 +619,7 @@ int game_play_by_player(int playerIdx, int selected[], int count) {
         gameOver = true;
         printf("game over! %s team wins!\n", player->team == TEAM_LANDLORD ? "landlord" : "farmer");
         
-        // 计算并更新积分（新增）
+        // 计算并更新积分
         if (player->team == TEAM_LANDLORD) {
             // 地主队获胜
             players[landlordIndex].score += 2;
@@ -723,7 +723,7 @@ const char* game_get_state_json() {
 
     offset += sprintf(buffer + offset, "{");
 
-    // 基础状态（新增抢地主状态）
+    // 基础状态
     offset += sprintf(buffer + offset, "\"landlordRobbed\":%s,", landlordRobbed ? "true" : "false");
     offset += sprintf(buffer + offset, "\"landlordIndex\":%d,", landlordIndex);
 
@@ -805,7 +805,7 @@ void rob_landlord(int playerIdx) {
         landlordCards[0].name, landlordCards[1].name, landlordCards[2].name);
 }
 
-// 新增：AI抢地主逻辑
+// AI抢地主逻辑
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_KEEPALIVE
 #endif
@@ -855,7 +855,7 @@ void ai_rob_landlord(int playerIdx) {
     }
 }
 
-// 新增：分配地主底牌
+// 分配地主底牌
 void assign_landlord_cards() {
     if (landlordIndex == -1) return;
 
@@ -867,7 +867,7 @@ void assign_landlord_cards() {
     sortHandByPoint(&players[landlordIndex]);
 }
 
-// 新增：更新玩家队伍归属
+// 更新玩家队伍归属
 void update_player_team() {
     for (int i = 0; i < 3; i++) {
         if (players[i].isLandlord) {
@@ -879,7 +879,7 @@ void update_player_team() {
     }
 }
 
-// 新增：智能出牌逻辑（核心）
+// 智能出牌逻辑
 int get_best_play(int playerIdx) {
     Player* player = &players[playerIdx];
     int myTeam = players[playerIdx].team;
@@ -1480,11 +1480,5 @@ void game_auto_run() {
 int main() {
     srand((unsigned)time(NULL));
     game_init();
-
-    // 测试抢地主流程（玩家抢地主）
-    // rob_landlord(0); // 玩家抢地主
-    // 或AI抢地主
-    // ai_rob_landlord(1);
-
     return 0;
 }
