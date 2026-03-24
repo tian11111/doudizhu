@@ -17,6 +17,7 @@ typedef enum {
     TRIPLE_ONE,       // 三带一
     TRIPLE_PAIR,      // 三带二
     STRAIGHT,         // 顺子
+    DOUBLE_STRAIGHT,  // 连对
     BOMB,             // 炸弹（四张相同）
     ROCKET            // 王炸（大小王）
 } PlayType;
@@ -329,6 +330,33 @@ Play analyzePlay(const Player* player, int selected[], int selectedCount) {
         return play;
     }
 
+    // 连对：至少 3 对，不能包含 2 和王
+    if (selectedCount >= 6 && selectedCount % 2 == 0) {
+        bool isDoubleStraight = true;
+
+        for (int i = 0; i < selectedCount; i += 2) {
+            if (points[i] != points[i + 1]) {
+                isDoubleStraight = false;
+                break;
+            }
+            if (points[i] >= POINT_2) {   // 连对不能到 2 / 王
+                isDoubleStraight = false;
+                break;
+            }
+            if (i >= 2 && points[i] != points[i - 2] + 1) {
+                isDoubleStraight = false;
+                break;
+            }
+        }
+
+        if (isDoubleStraight) {
+            play.type = DOUBLE_STRAIGHT;
+            play.point = points[0];
+            play.length = selectedCount;   // 这里 length 存总牌数
+            return play;
+        }
+    }
+
     // 顺子
     if (selectedCount >= 5) {
         bool isStraight = true;
@@ -396,7 +424,7 @@ bool canPlayBeat(const Play* current, const Play* last) {
 
     // 同类型比较
     if (current->type == last->type) {
-        if (current->type == STRAIGHT) {
+        if (current->type == STRAIGHT || current->type == DOUBLE_STRAIGHT) {
             if (current->length != last->length) {
                 return false;
             }
@@ -494,41 +522,6 @@ EMSCRIPTEN_KEEPALIVE
 #endif
 int game_play(int selected[], int count) {
     return game_play_by_player(0, selected, count);
-
-    // 抢地主未完成时不能出牌
-    if (!landlordRobbed) {
-        return 0;
-    }
-
-    Play currentPlay = analyzePlay(&players[0], selected, count);
-
-    if (currentPlay.type == PASS) return 0;
-    if (!canPlayBeat(&currentPlay, &lastPlay)) return 0;
-
-    buildPlayedTextFromSelection(&players[0], selected, count);
-
-    // 删除手牌
-    for (int k = count - 1; k >= 0; k--) {
-        int idx = selected[k];
-        for (int j = idx; j < players[0].cardCount - 1; j++) {
-            players[0].hand[j] = players[0].hand[j + 1];
-        }
-        players[0].cardCount--;
-    }
-
-    lastPlay = currentPlay;
-    lastPlayer = 0;
-    passCount = 0;
-    currentPlayer = 1;
-
-    // 检查队伍是否获胜
-    if (check_team_win()) {
-        gameOver = true;
-        printf("游戏结束！%s队获胜！\n", players[0].team == TEAM_LANDLORD ? "地主" : "农民");
-    }
-
-    gameRound++;
-    return 1;
 }
 
 // 过牌
@@ -564,7 +557,7 @@ int game_pass_by_player(int playerIdx) {
 
     if (lastPlay.type == PASS) return 0;
 
-    strcpy(lastPlayedText, "pass");
+    strcpy(lastPlayedText, "过牌");
 
     passCount++;
     lastPlayer = playerIdx;
@@ -574,6 +567,7 @@ int game_pass_by_player(int playerIdx) {
         lastPlay.type = PASS;
         lastPlayer = -1;
         passCount = 0;
+        clearLastPlayedText();  // 清空出牌文本，避免显示问题
     }
 
     gameRound++;
@@ -585,26 +579,6 @@ EMSCRIPTEN_KEEPALIVE
 #endif
 int game_pass() {
     return game_pass_by_player(0);
-
-    if (!landlordRobbed) {
-        return 0;
-    }
-
-    if (lastPlay.type == PASS) return 0;
-
-    strcpy(lastPlayedText, "过牌");
-
-    passCount++;
-    lastPlayer = 0;
-    currentPlayer = 1;
-
-    if (passCount >= 2) {
-        lastPlay.type = PASS;
-        lastPlayer = -1;
-        passCount = 0;
-    }
-    gameRound++;
-    return 1;
 }
 
 // 获取游戏状态JSON
@@ -633,6 +607,22 @@ const char* game_get_state_json() {
     for (int i = 0; i < players[0].cardCount; i++) {
         if (i > 0) offset += sprintf(buffer + offset, ",");
         offset += sprintf(buffer + offset, "\"%s\"", players[0].hand[i].name);
+    }
+    offset += sprintf(buffer + offset, "],");
+
+    // AI1 手牌（结算或调试可用）
+    offset += sprintf(buffer + offset, "\"ai1Hand\":[");
+    for (int i = 0; i < players[1].cardCount; i++) {
+        if (i > 0) offset += sprintf(buffer + offset, ",");
+        offset += sprintf(buffer + offset, "\"%s\"", players[1].hand[i].name);
+    }
+    offset += sprintf(buffer + offset, "],");
+
+    // AI2 手牌
+    offset += sprintf(buffer + offset, "\"ai2Hand\":[");
+    for (int i = 0; i < players[2].cardCount; i++) {
+        if (i > 0) offset += sprintf(buffer + offset, ",");
+        offset += sprintf(buffer + offset, "\"%s\"", players[2].hand[i].name);
     }
     offset += sprintf(buffer + offset, "],");
 
@@ -982,6 +972,16 @@ int get_best_play(int playerIdx) {
             }
         }
 
+        // 连对（长度 6~12，按偶数）
+        for (int len = 6; len <= 12; len += 2) {
+            if (len > player->cardCount) break;
+            for (int i = 0; i <= player->cardCount - len; i++) {
+                int sel[20];
+                for (int k = 0; k < len; k++) sel[k] = i + k;
+                TRY_CANDIDATE(sel, len);
+            }
+        }
+
         // 炸弹
         for (int i = 0; i < player->cardCount - 3; i++) {
             if (player->hand[i].point == player->hand[i + 3].point) {
@@ -1065,6 +1065,16 @@ int get_best_play(int playerIdx) {
                 }
             }
         }
+        else if (lastPlay.type == DOUBLE_STRAIGHT) {
+            int len = lastPlay.length;
+            if (len >= 6 && len <= player->cardCount && len % 2 == 0) {
+                for (int i = 0; i <= player->cardCount - len; i++) {
+                    int sel[20];
+                    for (int k = 0; k < len; k++) sel[k] = i + k;
+                    TRY_CANDIDATE(sel, len);
+                }
+            }
+        }
 
         // 炸弹永远是兜底
         if (lastPlay.type != ROCKET) {
@@ -1092,26 +1102,20 @@ int get_best_play(int playerIdx) {
 
     #undef TRY_CANDIDATE
 
-    // 农民时：队友出了牌，默认尽量不压，除非真危险
+    // 农民时：队友出了牌，默认尽量不压，除非真危险（优化版）
     if (lastPlay.type != PASS &&
         myTeam == TEAM_FARMER &&
         prevIdx != -1 &&
         players[prevIdx].team == myTeam &&
         found) {
 
-        bool shouldForcePass = true;
+        bool shouldForcePass = false;
 
-        // 队友只剩 1~2 张，基本不压
-        if (players[prevIdx].cardCount <= 2) {
+        // 只有在队友牌权很稳、地主不危险、自己也不适合接时才让
+        if (players[prevIdx].cardCount > 2 &&
+            (landlordIndex < 0 || players[landlordIndex].cardCount > 3) &&
+            player->cardCount > 4) {
             shouldForcePass = true;
-        }
-        // 地主只剩 1~2 张，必须考虑接管
-        else if (landlordIndex >= 0 && players[landlordIndex].cardCount <= 2) {
-            shouldForcePass = false;
-        }
-        // 自己也快走完了，可以接
-        else if (player->cardCount <= 3) {
-            shouldForcePass = false;
         }
 
         if (shouldForcePass) {

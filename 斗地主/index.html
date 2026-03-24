@@ -679,7 +679,7 @@
       }
 
       .controls {
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(7, 1fr);
       }
 
       .rob-actions {
@@ -695,9 +695,14 @@
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
+      overflow: hidden;
+    }
+
+    .mini-card.has-face,
+    .show-card.has-face,
+    .my-card.has-face {
       color: transparent;
       text-indent: -9999px;
-      overflow: hidden;
     }
 
     .pass-chip {
@@ -952,7 +957,7 @@
       }
 
       .controls {
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(7, 1fr);
         gap: 6px;
       }
 
@@ -963,11 +968,104 @@
       }
     }
 
+
+    .result-panel {
+      width: calc(100% - 16px);
+      margin: 10px auto 0;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: none;
+    }
+
+    .result-panel.show { display:block; }
+    .result-title { text-align:center; font-size:16px; font-weight:800; color:#ffe7a9; margin-bottom:8px; }
+    .result-tip { text-align:center; font-size:12px; color:var(--muted); line-height:1.6; }
+    .result-hands {
+      margin-top: 10px;
+      display: grid;
+      gap: 10px;
+    }
+    .result-player {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .result-player-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #eefcf5;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .result-card-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      min-height: 30px;
+    }
+
+
+    .toast-wrap {
+      position: fixed;
+      top: calc(12px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      width: min(92vw, 420px);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(8, 15, 26, 0.9);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #f8fafc;
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 14px 28px rgba(0,0,0,0.28);
+      backdrop-filter: blur(10px);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateY(-8px) scale(.98);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .toast.info { border-color: rgba(59,130,246,0.38); }
+    .toast.success { border-color: rgba(34,197,94,0.38); }
+    .toast.warn { border-color: rgba(250,204,21,0.4); }
+    .toast.error { border-color: rgba(239,68,68,0.42); }
+
+    @media (max-width: 768px) and (orientation: landscape) {
+      .toast-wrap {
+        top: calc(8px + var(--safe-top));
+        width: min(78vw, 420px);
+      }
+      .toast {
+        padding: 9px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+    }
+
   </style>
 </head>
-<body>
+<body class="show-log">
   <div class="app">
     <div class="app-inner">
+      <div class="toast-wrap" id="toastWrap"></div>
       <div class="title">斗地主</div>
 
       <div class="top-status">
@@ -1071,11 +1169,17 @@
         <div class="hand-area" id="handArea"></div>
       </div>
 
+      <div class="result-panel" id="resultPanel">
+        <div class="result-title" id="resultTitle">本局结束</div>
+        <div class="result-tip" id="resultTip">结算中...</div>
+      </div>
+
       <div class="controls">
         <button class="action btn-start" id="btnStart">开始游戏</button>
         <button class="action btn-play" id="btnPlay">出牌</button>
         <button class="action btn-pass" id="btnPass">过牌</button>
         <button class="action btn-refresh" id="btnRefresh">刷新</button>
+        <button class="action btn-audio" id="btnFaceToggle">牌面开</button>
         <button class="action btn-audio" id="btnBgmToggle">BGM开</button>
         <button class="action btn-audio" id="btnSfxToggle">音效开</button>
       </div>
@@ -1098,9 +1202,31 @@
       return CARD_IMAGES[name] || "";
     }
 
+    function normalizePlayedText(text) {
+      if (!text) return "";
+      const t = String(text).trim();
+      if (!t) return "";
+      const lower = t.toLowerCase();
+      if (lower === "pass" || t === "过牌") return "过牌";
+      return t;
+    }
+
+    function shouldShowFace() {
+      return showCardFaces;
+    }
+
     function applyCardFace(el, name) {
       const src = getCardImage(name);
-      if (src) {
+      const normalized = normalizePlayedText(name);
+      if (normalized === "过牌") {
+        el.classList.remove("has-face");
+        el.style.backgroundImage = "";
+        el.textContent = "过牌";
+        el.removeAttribute("aria-label");
+        el.title = "过牌";
+        return;
+      }
+      if (src && shouldShowFace()) {
         el.classList.add("has-face");
         el.style.backgroundImage = `url(${src})`;
         el.textContent = name;
@@ -1110,7 +1236,7 @@
         el.classList.remove("has-face");
         el.style.backgroundImage = "";
         el.textContent = name;
-        el.removeAttribute("aria-label");
+        el.setAttribute("aria-label", name);
         el.title = name;
       }
     }
@@ -1122,6 +1248,7 @@
 
     let bgmEnabled = true;
     let sfxEnabled = true;
+    let showCardFaces = true;
     let audioUnlocked = false;
     let endSoundPlayed = false;
 
@@ -1129,6 +1256,8 @@
     const logBox = document.getElementById("log");
     const logToggle = document.getElementById("logToggle");
     const robPanel = document.getElementById("robPanel");
+    const resultPanel = document.getElementById("resultPanel");
+    const toastWrap = document.getElementById("toastWrap");
 
     const bgmAudio = document.getElementById("bgmAudio");
     const loseAudio = document.getElementById("loseAudio");
@@ -1140,8 +1269,34 @@
 
     function appendLog(text) {
       const time = new Date().toLocaleTimeString();
-      logBox.textContent += `[${time}] ${text}\n`;
+      logBox.textContent += `[${time}] ${text}
+`;
       logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function setLogToggleText() {
+      if (!logToggle) return;
+      logToggle.textContent = document.body.classList.contains("show-log") ? "隐藏日志" : "显示日志";
+    }
+
+    function notify(text, type = "info", alsoLog = true, timeout = 1800) {
+      if (!text) return;
+      if (alsoLog) appendLog(text);
+      if (!toastWrap) return;
+
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = text;
+      toastWrap.appendChild(toast);
+
+      requestAnimationFrame(() => toast.classList.add("show"));
+
+      window.setTimeout(() => {
+        toast.classList.remove("show");
+        window.setTimeout(() => {
+          if (toast.parentNode) toast.remove();
+        }, 220);
+      }, timeout);
     }
 
     function playerName(index) {
@@ -1157,10 +1312,46 @@
         4: "三带一",
         5: "三带二",
         6: "顺子",
-        7: "炸弹",
-        8: "王炸"
+        7: "连对",
+        8: "炸弹",
+        9: "王炸"
       };
       return map[type] || "未知";
+    }
+
+    // 游戏结束时显示所有玩家的手牌
+    function showAllHandsAtGameEnd() {
+      if (!gameState || !gameState.gameOver) return;
+      
+      appendLog("=== 结算 ===");
+      appendLog(`地主：${playerName(gameState.landlordIndex)}`);
+      
+      // 显示我的手牌（如果有剩余）
+      if (gameState.hand && gameState.hand.length > 0) {
+        appendLog(`你的手牌 (${gameState.hand.length}张): ${gameState.hand.join(" ")}`);
+      } else {
+        appendLog("你的手牌：已出完");
+      }
+      
+      // 显示 AI1 手牌
+      if (gameState.ai1Hand && gameState.ai1Hand.length > 0) {
+        appendLog(`电脑 1 手牌 (${gameState.ai1Hand.length}张): ${gameState.ai1Hand.join(" ")}`);
+      } else {
+        appendLog("电脑 1 手牌：已出完");
+      }
+      
+      // 显示 AI2 手牌
+      if (gameState.ai2Hand && gameState.ai2Hand.length > 0) {
+        appendLog(`电脑 2 手牌 (${gameState.ai2Hand.length}张): ${gameState.ai2Hand.join(" ")}`);
+      } else {
+        appendLog("电脑 2 手牌：已出完");
+      }
+      
+      // 显示积分
+      appendLog("=== 积分结算 ===");
+      appendLog(`你：${gameState.myScore ?? 0}分`);
+      appendLog(`电脑 1: ${gameState.ai1Score ?? 0}分`);
+      appendLog(`电脑 2: ${gameState.ai2Score ?? 0}分`);
     }
 
     function scoreClass(score) {
@@ -1179,6 +1370,7 @@
     }
 
     function updateAudioButtons() {
+      document.getElementById("btnFaceToggle").textContent = showCardFaces ? "牌面开" : "牌面关";
       document.getElementById("btnBgmToggle").textContent = bgmEnabled ? "BGM开" : "BGM关";
       document.getElementById("btnSfxToggle").textContent = sfxEnabled ? "音效开" : "音效关";
     }
@@ -1260,8 +1452,9 @@
     }
 
     function splitCards(text) {
-      if (!text || text === "过牌") return [];
-      return text.trim().split(/\s+/);
+      const normalized = normalizePlayedText(text);
+      if (!normalized || normalized === "过牌") return [];
+      return normalized.split(/\s+/).filter(card => card && normalizePlayedText(card) !== "过牌" && card.toLowerCase() !== "pass");
     }
 
     function renderPlayedArea(playerIndex, text) {
@@ -1276,9 +1469,10 @@
 
       target.innerHTML = "";
 
-      if (!text) return;
+      const normalized = normalizePlayedText(text);
+      if (!normalized) return;
 
-      if (text === "过牌") {
+      if (normalized === "过牌") {
         const pass = document.createElement("div");
         pass.className = "pass-chip";
         pass.textContent = "过牌";
@@ -1286,7 +1480,7 @@
         return;
       }
 
-      const cards = splitCards(text);
+      const cards = splitCards(normalized);
       if (!cards.length) return;
 
       cards.forEach(card => {
@@ -1364,15 +1558,18 @@
         `游戏状态：${state.gameOver ? "已结束" : (state.landlordRobbed ? "进行中" : "抢地主中")}`;
       document.getElementById("playTypeText").textContent = `牌型：${playTypeName(state.lastPlayType)}`;
 
+      const lastText = normalizePlayedText(state.lastPlayedText);
       if (state.lastPlayer === -1) {
         clearPlayedAreas();
-      } else if (state.lastPlayedText === "过牌") {
+      } else if (lastText === "过牌") {
         renderPlayedArea(state.lastPlayer, "过牌");
       } else if (state.lastPlayType === 0) {
         clearPlayedAreas();
       } else {
-        renderPlayedArea(state.lastPlayer, state.lastPlayedText);
+        renderPlayedArea(state.lastPlayer, lastText);
       }
+
+      renderResultPanel(state);
     }
 
     function getCardMetrics() {
@@ -1407,6 +1604,79 @@
       };
     }
 
+    function estimatePlayHint(selected) {
+      if (!gameState) return "";
+      if (!selected.length) return "你还没选牌。";
+
+      const cards = selected.map(i => gameState.hand[i]).filter(Boolean);
+      const points = cards.map(name => {
+        const m = String(name).match(/^(10|[3-9JQKA2]|小王|大王)/);
+        const key = m ? m[1] : name;
+        const order = ["3","4","5","6","7","8","9","10","J","Q","K","A","2","小王","大王"];
+        return order.indexOf(key);
+      }).sort((a,b)=>a-b);
+
+      const counts = {};
+      for (const p of points) counts[p] = (counts[p]||0)+1;
+      const vals = Object.values(counts).sort((a,b)=>a-b);
+      let type = "";
+      if (points.length === 1) type = "单张";
+      else if (points.length === 2 && vals.length === 1 && vals[0] === 2) type = "对子";
+      else if (points.length === 2 && points[0] === 13 && points[1] === 14) type = "王炸";
+      else if (points.length === 3 && vals.length === 1 && vals[0] === 3) type = "三张";
+      else if (points.length === 4 && vals.join(',') === '1,3') type = "三带一";
+      else if (points.length === 4 && vals.length === 1 && vals[0] === 4) type = "炸弹";
+      else if (points.length === 5 && vals.join(',') === '2,3') type = "三带二";
+      else if (points.length >= 5 && vals.every(v => v === 1) && points[points.length-1] <= 11 && points.every((p,i)=>i===0 || p===points[i-1]+1)) type = "顺子";
+      else if (points.length >= 6 && points.length % 2 === 0 && vals.every(v => v === 2)) {
+        const uniq = Object.keys(counts).map(Number).sort((a,b)=>a-b);
+        if (uniq[uniq.length-1] <= 11 && uniq.every((p,i)=>i===0 || p===uniq[i-1]+1)) type = "连对";
+      }
+      if (!type) return "牌型不对。";
+
+      const currentType = playTypeName(gameState.lastPlayType);
+      if (gameState.lastPlayType === 0) return `已选：${type}`;
+      if (type !== currentType && type !== "炸弹" && type !== "王炸") return `牌型不对：当前要跟 ${currentType}。`;
+      return `已选：${type}`;
+    }
+
+    function renderResultPanel(state) {
+      if (!state || !state.gameOver) {
+        resultPanel.classList.remove('show');
+        resultPanel.innerHTML = '<div class="result-title" id="resultTitle">本局结束</div><div class="result-tip" id="resultTip">结算中...</div>';
+        return;
+      }
+
+      resultPanel.classList.add('show');
+      const win = state.myCardCount === 0;
+      const handHtml = (cards) => {
+        if (!cards || !cards.length) return '<div class="result-tip">已出完</div>';
+        return '<div class="result-card-list">' + cards.map(card => {
+          const cls = getCardImage(card) && shouldShowFace() ? 'mini-card has-face' : 'mini-card';
+          const style = getCardImage(card) && shouldShowFace() ? ` style="background-image:url(${getCardImage(card)})"` : '';
+          return `<div class="${cls}"${style} title="${card}" aria-label="${card}">${card}</div>`;
+        }).join('') + '</div>';
+      };
+
+      resultPanel.innerHTML = `
+        <div class="result-title">${win ? '本局你赢了' : '本局结束'}</div>
+        <div class="result-tip">积分：你 ${state.myScore ?? 0}，电脑1 ${state.ai1Score ?? 0}，电脑2 ${state.ai2Score ?? 0}</div>
+        <div class="result-hands">
+          <div class="result-player">
+            <div class="result-player-title">你（剩余 ${state.myCardCount} 张）</div>
+            ${handHtml(state.hand)}
+          </div>
+          <div class="result-player">
+            <div class="result-player-title">电脑1（剩余 ${state.ai1CardCount} 张）</div>
+            ${handHtml(state.ai1Hand)}
+          </div>
+          <div class="result-player">
+            <div class="result-player-title">电脑2（剩余 ${state.ai2CardCount} 张）</div>
+            ${handHtml(state.ai2Hand)}
+          </div>
+        </div>`;
+    }
+
     function renderHand(state) {
       handArea.innerHTML = "";
       if (!state.hand || !state.hand.length) return;
@@ -1429,6 +1699,11 @@
         if (index >= state.hand.length) invalid.push(index);
       });
       invalid.forEach(index => selectedIndices.delete(index));
+
+      const hint = estimatePlayHint(Array.from(selectedIndices).sort((a,b)=>a-b));
+      if (selectedIndices.size) {
+        document.getElementById("playTypeText").textContent = hint;
+      }
 
       state.hand.forEach((cardName, index) => {
         const div = document.createElement("div");
@@ -1516,7 +1791,7 @@
 
       while (!gameState.landlordRobbed && gameState.currentPlayer !== 0 && !gameState.gameOver) {
         const actor = gameState.currentPlayer;
-        appendLog(`${playerName(actor)} 正在决定是否抢地主...`);
+        notify(`${playerName(actor)} 正在决定是否抢地主...`, "info", true, 1200);
         await sleep(500);
 
         if (typeof wasmModule._ai_rob_landlord !== "function") {
@@ -1528,7 +1803,7 @@
         renderAll();
 
         if (gameState.landlordRobbed) {
-          appendLog(`${playerName(gameState.landlordIndex)} 抢地主成功。`);
+          notify(`${playerName(gameState.landlordIndex)} 抢地主成功。`, "success", true, 2000);
           break;
         } else {
           const next = (actor + 1) % 3;
@@ -1537,7 +1812,7 @@
         }
 
         if (next === 0 && !gameState.landlordRobbed) {
-          appendLog("轮到你决定是否抢地主。");
+          notify("轮到你决定是否抢地主。", "warn", true, 1800);
           break;
         }
       }
@@ -1573,7 +1848,7 @@
 
     async function startGame() {
       if (!wasmModule) {
-        appendLog("WASM 模块还没加载好。");
+        notify("WASM 模块还没加载好。", "error", true, 2200);
         return;
       }
 
@@ -1588,10 +1863,17 @@
       clearPlayedAreas();
 
       renderAll();
-      appendLog("新游戏开始。");
+
+      // 保险一点：开始游戏后立刻同步一次抢地主面板显示
+      if (gameState && !gameState.landlordRobbed) {
+        const shouldShowRob = gameState.currentPlayer === 0 && !gameState.gameOver;
+        robPanel.classList.toggle("show", shouldShowRob);
+      }
+
+      notify("新游戏开始。", "success", true, 1600);
 
       if (!gameState.landlordRobbed) {
-        appendLog("进入抢地主阶段。");
+        notify("进入抢地主阶段。", "info", true, 1500);
       }
 
       if (gameState.currentPlayer !== 0 && !gameState.landlordRobbed) {
@@ -1599,31 +1881,31 @@
       }
 
       if (gameState.landlordRobbed && gameState.currentPlayer !== 0 && !gameState.gameOver) {
-        appendLog(`${playerName(gameState.currentPlayer)} 先手，自动运行中。`);
+        notify(`${playerName(gameState.currentPlayer)} 先手，自动运行中。`, "info", true, 1600);
         await autoRunAI();
       }
 
       if (gameState.currentPlayer === 0 && !gameState.gameOver) {
-        appendLog(gameState.landlordRobbed ? "轮到你出牌了。" : "轮到你决定是否抢地主。");
+        notify(gameState.landlordRobbed ? "轮到你出牌了。" : "轮到你决定是否抢地主。", "warn", true, 1800);
       }
     }
 
     async function robLandlord() {
-      if (!gameState) return appendLog("请先开始游戏。");
-      if (gameState.gameOver) return appendLog("游戏已经结束。");
-      if (gameState.landlordRobbed) return appendLog("地主已经确定了。");
-      if (gameState.currentPlayer !== 0) return appendLog("现在不是你抢地主。");
+      if (!gameState) return notify("请先开始游戏。", "error", true, 2000);
+      if (gameState.gameOver) return notify("游戏已经结束。", "warn", true, 1800);
+      if (gameState.landlordRobbed) return notify("地主已经确定了。", "warn", true, 1800);
+      if (gameState.currentPlayer !== 0) return notify("现在不是你抢地主。", "warn", true, 1800);
 
       if (typeof wasmModule._rob_landlord !== "function") {
-        return appendLog("错误：WASM 没导出 rob_landlord，前端调不到。");
+        return notify("错误：WASM 没导出 rob_landlord，前端调不到。", "error", true, 3000);
       }
 
       wasmModule._rob_landlord(0);
       renderAll();
-      appendLog("你选择了抢地主。");
+      notify("你选择了抢地主。", "success", true, 1500);
 
       if (gameState.landlordRobbed) {
-        appendLog("你成为地主，拿到底牌，准备出牌。");
+        notify("你成为地主，拿到底牌，准备出牌。", "success", true, 2200);
       }
 
       if (gameState.currentPlayer !== 0 && !gameState.gameOver) {
@@ -1632,35 +1914,35 @@
     }
 
     async function noRobLandlord() {
-      if (!gameState) return appendLog("请先开始游戏。");
-      if (gameState.gameOver) return appendLog("游戏已经结束。");
-      if (gameState.landlordRobbed) return appendLog("地主已经确定了。");
-      if (gameState.currentPlayer !== 0) return appendLog("现在不是你决定。");
+      if (!gameState) return notify("请先开始游戏。", "error", true, 2000);
+      if (gameState.gameOver) return notify("游戏已经结束。", "warn", true, 1800);
+      if (gameState.landlordRobbed) return notify("地主已经确定了。", "warn", true, 1800);
+      if (gameState.currentPlayer !== 0) return notify("现在不是你决定。", "warn", true, 1800);
 
-      appendLog("你选择了不抢。");
+      notify("你选择了不抢。", "info", true, 1500);
       gameState.currentPlayer = 1;
       renderStatus(gameState);
 
       await runAiRobIfNeeded();
 
       if (gameState.landlordRobbed && gameState.currentPlayer !== 0 && !gameState.gameOver) {
-        appendLog(`${playerName(gameState.currentPlayer)} 先手，自动运行中。`);
+        notify(`${playerName(gameState.currentPlayer)} 先手，自动运行中。`, "info", true, 1600);
         await autoRunAI();
       }
 
       if (gameState.currentPlayer === 0 && !gameState.gameOver) {
-        appendLog(gameState.landlordRobbed ? "轮到你出牌了。" : "轮到你决定是否抢地主。");
+        notify(gameState.landlordRobbed ? "轮到你出牌了。" : "轮到你决定是否抢地主。", "warn", true, 1800);
       }
     }
 
     async function playSelected() {
-      if (!gameState) return appendLog("请先开始游戏。");
-      if (gameState.gameOver) return appendLog("游戏已经结束。");
-      if (!gameState.landlordRobbed) return appendLog("还在抢地主，先别急着出牌。");
-      if (gameState.currentPlayer !== 0) return appendLog("还没轮到你。");
+      if (!gameState) return notify("请先开始游戏。", "error", true, 2000);
+      if (gameState.gameOver) return notify("游戏已经结束。", "warn", true, 1800);
+      if (!gameState.landlordRobbed) return notify("还没抢地主，先别急着出牌。", "warn", true, 2200);
+      if (gameState.currentPlayer !== 0) return notify("还没轮到你。", "warn", true, 1800);
 
       const selected = Array.from(selectedIndices).sort((a, b) => a - b);
-      if (!selected.length) return appendLog("你还没选牌。");
+      if (!selected.length) return notify("你还没选牌。", "warn", true, 1800);
 
       const ptr = mallocIntArray(selected);
       const result = wasmModule._game_play(ptr, selected.length);
@@ -1668,46 +1950,52 @@
 
       if (!result) {
         renderAll();
-        return appendLog("出牌失败：牌型不合法，或者压不过上家。");
+        return notify(`出牌失败：${estimatePlayHint(selected) || "牌型不合法，或者压不过上家。"}`, "error", true, 2600);
       }
 
       selectedIndices.clear();
       renderAll();
-      appendLog(`你出了：${gameState.lastPlayedText || "未知牌面"}（${playTypeName(gameState.lastPlayType)}）`);
+      notify(`你出了：${gameState.lastPlayedText || "未知牌面"}（${playTypeName(gameState.lastPlayType)}）`, "success", true, 1500);
 
       if (!gameState.gameOver && gameState.currentPlayer !== 0) {
         await autoRunAI();
       }
 
-      if (gameState.gameOver) appendLog("游戏结束。");
-      else if (gameState.currentPlayer === 0) appendLog("又轮到你了。");
+      if (gameState.gameOver) {
+        notify("游戏结束。", "info", true, 1800);
+        showAllHandsAtGameEnd();
+      }
+      else if (gameState.currentPlayer === 0) notify("又轮到你了。", "warn", true, 1500);
 
       handleGameOverAudio();
     }
 
     async function passTurn() {
-      if (!gameState) return appendLog("请先开始游戏。");
-      if (gameState.gameOver) return appendLog("游戏已经结束。");
-      if (!gameState.landlordRobbed) return appendLog("还在抢地主阶段，不能过牌。");
-      if (gameState.currentPlayer !== 0) return appendLog("还没轮到你过牌。");
+      if (!gameState) return notify("请先开始游戏。", "error", true, 2000);
+      if (gameState.gameOver) return notify("游戏已经结束。", "warn", true, 1800);
+      if (!gameState.landlordRobbed) return notify("还在抢地主阶段，不能过牌。", "warn", true, 2200);
+      if (gameState.currentPlayer !== 0) return notify("还没轮到你过牌。", "warn", true, 1800);
 
       const result = wasmModule._game_pass();
       if (!result) {
         renderAll();
-        return appendLog("过牌失败：新一轮第一个出牌的人不能过。");
+        return notify("过牌失败：新一轮第一个出牌的人不能过。", "error", true, 2400);
       }
 
       selectedIndices.clear();
       renderAll();
       renderPlayedArea(0, "过牌");
-      appendLog("你选择了过牌。");
+      notify("你选择了过牌。", "info", true, 1500);
 
       if (!gameState.gameOver && gameState.currentPlayer !== 0) {
         await autoRunAI();
       }
 
-      if (gameState.gameOver) appendLog("游戏结束。");
-      else if (gameState.currentPlayer === 0) appendLog("又轮到你了。");
+      if (gameState.gameOver) {
+        notify("游戏结束。", "info", true, 1800);
+        showAllHandsAtGameEnd();
+      }
+      else if (gameState.currentPlayer === 0) notify("又轮到你了。", "warn", true, 1500);
 
       handleGameOverAudio();
     }
@@ -1719,11 +2007,24 @@
       document.getElementById("btnRefresh").onclick = () => {
         if (!wasmModule) return;
         renderAll();
-        appendLog("界面已刷新。");
+        if (gameState && !gameState.landlordRobbed) {
+          robPanel.classList.toggle("show", gameState.currentPlayer === 0 && !gameState.gameOver);
+        }
+        notify("界面已刷新。", "info", true, 1200);
       };
 
       document.getElementById("btnRob").onclick = () => robLandlord();
       document.getElementById("btnNoRob").onclick = () => noRobLandlord();
+
+      document.getElementById("btnFaceToggle").onclick = () => {
+        showCardFaces = !showCardFaces;
+        updateAudioButtons();
+        if (gameState) {
+          renderStatus(gameState);
+          renderHand(gameState);
+        }
+        notify(showCardFaces ? "已开启牌面图片。" : "已关闭牌面图片，切成纯文字更流畅。", "info", true, 1600);
+      };
 
       document.getElementById("btnBgmToggle").onclick = () => {
         bgmEnabled = !bgmEnabled;
@@ -1747,6 +2048,8 @@
 
       logToggle.onclick = () => {
         document.body.classList.toggle("show-log");
+        setLogToggleText();
+        notify(document.body.classList.contains("show-log") ? "日志已展开。" : "日志已收起。", "info", false, 1200);
       };
     }
 
@@ -1760,13 +2063,20 @@
       }
 
       bindButtons();
+      setLogToggleText();
       updateAudioButtons();
-      appendLog("WASM 模块加载完成。先点“开始游戏”。");
+      notify("WASM 模块加载完成。先点开始游戏。", "success", true, 2200);
+      notify("通知弹窗已启用。", "info", false, 1400);
     }
+
+    window.addEventListener("error", (e) => {
+      const msg = e && e.message ? e.message : "页面脚本报错了";
+      notify("页面脚本错误：" + msg, "error", true, 3600);
+    });
 
     loadModule().catch(err => {
       console.error(err);
-      appendLog("加载失败：" + err.message);
+      notify("加载失败：" + err.message, "error", true, 3600);
     });
 
     window.addEventListener("resize", () => {
