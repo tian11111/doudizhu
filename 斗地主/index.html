@@ -3292,6 +3292,13 @@
       <audio id="bgmAudio" src="./【P2】💣欢乐斗基米💣(修复版).mp3" loop preload="auto"></audio>
       <audio id="loseAudio" src="./失败搞笑：斗地主失败_爱给网_aigei_com.mp3" preload="auto"></audio>
       <audio id="winAudio" src="./斗地主赢牌的声音__爱给网_aigei_com.mp3" preload="auto"></audio>
+      <audio id="dealAudio" src="./发牌.mp3" preload="auto"></audio>
+      <audio id="bombAudio" src="./炸弹.mp3" preload="auto"></audio>
+      <audio id="playCardAudio" src="./出牌音效.MP3" preload="auto"></audio>
+      <audio id="passAudio" src="./不要.mp3" preload="auto"></audio>
+      <audio id="biggerAudio" src="./大你.mp3" preload="auto"></audio>
+      <audio id="jokerBombAudio" src="./王炸.mp3" preload="auto"></audio>
+      <audio id="planeAudio" src="./飞机.mp3" preload="auto"></audio>
     </div>
   </div>
 
@@ -3375,10 +3382,25 @@
     const bgmAudio = document.getElementById("bgmAudio");
     const loseAudio = document.getElementById("loseAudio");
     const winAudio = document.getElementById("winAudio");
+    const dealAudio = document.getElementById("dealAudio");
+    const bombAudio = document.getElementById("bombAudio");
+    const playCardAudio = document.getElementById("playCardAudio");
+    const passAudio = document.getElementById("passAudio");
+    const biggerAudio = document.getElementById("biggerAudio");
+    const jokerBombAudio = document.getElementById("jokerBombAudio");
+    const planeAudio = document.getElementById("planeAudio");
+
+    const allSfxAudios = [
+      loseAudio, winAudio, dealAudio, bombAudio, playCardAudio,
+      passAudio, biggerAudio, jokerBombAudio, planeAudio
+    ].filter(Boolean);
 
     bgmAudio.volume = 0.35;
     loseAudio.volume = 0.9;
     winAudio.volume = 0.9;
+    [dealAudio, bombAudio, playCardAudio, passAudio, biggerAudio, jokerBombAudio, planeAudio]
+      .filter(Boolean)
+      .forEach(a => { a.volume = 0.92; });
 
     function appendLog(text) {
       const time = new Date().toLocaleTimeString();
@@ -3501,10 +3523,42 @@
     }
 
     function stopAllSfx() {
-      [loseAudio, winAudio].forEach(a => {
+      allSfxAudios.forEach(a => {
         a.pause();
         a.currentTime = 0;
       });
+    }
+
+    function playSfx(audioEl) {
+      if (!audioUnlocked || !sfxEnabled || !audioEl) return;
+      try {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        audioEl.play().catch(() => {});
+      } catch (_) {}
+    }
+
+    function isPlaneType(type) {
+      return type === 8 || type === 9 || type === 10;
+    }
+
+    function choosePlayAudio(before, after, actorIndex) {
+      if (!after || after.lastPlayer !== actorIndex) return null;
+      const type = after.lastPlayType;
+      if (type === 12) return jokerBombAudio;
+      if (type === 11) return bombAudio;
+      if (isPlaneType(type)) return planeAudio;
+      if (
+        before &&
+        before.lastPlayer !== -1 &&
+        before.lastPlayer !== actorIndex &&
+        before.lastPlayType !== 0 &&
+        before.lastPlayedText &&
+        normalizePlayedText(before.lastPlayedText) !== "过牌"
+      ) {
+        return biggerAudio;
+      }
+      return playCardAudio;
     }
 
     function playBgm() {
@@ -3518,15 +3572,11 @@
     }
 
     function playLoseSound() {
-      if (!audioUnlocked || !sfxEnabled) return;
-      loseAudio.currentTime = 0;
-      loseAudio.play().catch(() => {});
+      playSfx(loseAudio);
     }
 
     function playWinSound() {
-      if (!audioUnlocked || !sfxEnabled) return;
-      winAudio.currentTime = 0;
-      winAudio.play().catch(() => {});
+      playSfx(winAudio);
     }
 
     function clearPlayedAreas() {
@@ -4043,6 +4093,7 @@
         renderAll();
 
         if (gameState.landlordRobbed) {
+          playSfx(dealAudio);
           notify(`${playerName(gameState.landlordIndex)} 抢地主成功。`, "success", true, 2000);
           break;
         } else {
@@ -4073,8 +4124,10 @@
 
         if (before.currentPlayer === 1 || before.currentPlayer === 2) {
           if (gameState.lastPlayer === before.currentPlayer) {
+            playSfx(choosePlayAudio(before, gameState, before.currentPlayer));
             renderPlayedArea(before.currentPlayer, gameState.lastPlayedText);
           } else {
+            playSfx(passAudio);
             renderPlayedArea(before.currentPlayer, "过牌");
           }
         }
@@ -4096,6 +4149,7 @@
       endSoundPlayed = false;
       stopAllSfx();
       if (bgmEnabled) playBgm();
+      playSfx(dealAudio);
 
       wasmModule._game_init();
       selectedIndices.clear();
@@ -4145,6 +4199,7 @@
       notify("你选择了抢地主。", "success", true, 1500);
 
       if (gameState.landlordRobbed) {
+        playSfx(dealAudio);
         notify("你成为地主，拿到底牌，准备出牌。", "success", true, 2200);
       }
 
@@ -4184,6 +4239,7 @@
       const selected = Array.from(selectedIndices).sort((a, b) => a - b);
       if (!selected.length) return notify("你还没选牌。", "warn", true, 1800);
 
+      const before = JSON.parse(JSON.stringify(gameState));
       const ptr = mallocIntArray(selected);
       const result = wasmModule._game_play(ptr, selected.length);
       wasmModule._free(ptr);
@@ -4195,6 +4251,7 @@
 
       selectedIndices.clear();
       renderAll();
+      playSfx(choosePlayAudio(before, gameState, 0));
       notify(`你出了：${gameState.lastPlayedText || "未知牌面"}（${playTypeName(gameState.lastPlayType)}）`, "success", true, 1500);
 
       if (!gameState.gameOver && gameState.currentPlayer !== 0) {
@@ -4224,6 +4281,7 @@
 
       selectedIndices.clear();
       renderAll();
+      playSfx(passAudio);
       renderPlayedArea(0, "过牌");
       notify("你选择了过牌。", "info", true, 1500);
 
