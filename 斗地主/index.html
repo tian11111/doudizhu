@@ -698,6 +698,21 @@
       outline: none;
     }
 
+    .config-field select {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      border-radius: 14px;
+      padding: 11px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .config-field select option {
+      color: #111827;
+    }
+
     .config-field input::placeholder {
       color: rgba(255,255,255,0.44);
     }
@@ -3507,6 +3522,10 @@
       </div>
       <div class="config-grid">
         <div class="config-field">
+          <label for="cfgProviderPreset">AI 预设</label>
+          <select id="cfgProviderPreset"></select>
+        </div>
+        <div class="config-field">
           <label for="cfgApiUrl">API 网址</label>
           <input id="cfgApiUrl" type="text" placeholder="例如：https://dashscope.aliyuncs.com/compatible-mode/v1" />
         </div>
@@ -3610,7 +3629,20 @@
     let aiBusy = false;
 
     const AI_CONFIG_KEY = "doudizhu_ai_config_v1";
+    const AI_PROVIDER_PRESETS = {
+      custom: {
+        label: "自定义",
+        apiUrl: "",
+        aiName: ""
+      },
+      zhipu_glm_5_1: {
+        label: "智谱 AI / GLM-5.1",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "GLM-5.1"
+      }
+    };
     const defaultAiConfig = {
+      providerPreset: "custom",
       apiUrl: "",
       aiName: "qwen-plus",
       apiKey: "",
@@ -3678,7 +3710,20 @@
       localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(aiConfig));
     }
 
+    function populateProviderPresetOptions() {
+      const select = document.getElementById("cfgProviderPreset");
+      if (!select) return;
+      select.innerHTML = "";
+      Object.entries(AI_PROVIDER_PRESETS).forEach(([key, preset]) => {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = preset.label;
+        select.appendChild(option);
+      });
+    }
+
     function syncConfigForm() {
+      document.getElementById("cfgProviderPreset").value = aiConfig.providerPreset || "custom";
       document.getElementById("cfgApiUrl").value = aiConfig.apiUrl || "";
       document.getElementById("cfgAiName").value = aiConfig.aiName || "";
       document.getElementById("cfgApiKey").value = aiConfig.apiKey || "";
@@ -3686,6 +3731,14 @@
       document.getElementById("cfgBgmEnabled").checked = !!aiConfig.bgmEnabled;
       document.getElementById("cfgSfxEnabled").checked = !!aiConfig.sfxEnabled;
       document.getElementById("cfgAutoReview").checked = !!aiConfig.autoReview;
+    }
+
+    function applyProviderPresetToForm(presetKey, keepApiKey = true) {
+      const preset = AI_PROVIDER_PRESETS[presetKey] || AI_PROVIDER_PRESETS.custom;
+      document.getElementById("cfgProviderPreset").value = presetKey in AI_PROVIDER_PRESETS ? presetKey : "custom";
+      document.getElementById("cfgApiUrl").value = preset.apiUrl || "";
+      document.getElementById("cfgAiName").value = preset.aiName || "";
+      if (!keepApiKey) document.getElementById("cfgApiKey").value = "";
     }
 
     function applyAiConfig() {
@@ -3720,8 +3773,10 @@
     }
 
     function saveConfigFromForm() {
+      const providerPreset = document.getElementById("cfgProviderPreset").value || "custom";
       aiConfig = {
         ...aiConfig,
+        providerPreset,
         apiUrl: document.getElementById("cfgApiUrl").value.trim(),
         aiName: document.getElementById("cfgAiName").value.trim(),
         apiKey: document.getElementById("cfgApiKey").value.trim(),
@@ -4972,6 +5027,10 @@
       document.getElementById("btnConfig").onclick = () => openConfigModal();
       document.getElementById("btnConfigClose").onclick = () => closeConfigModal();
       document.getElementById("btnConfigSave").onclick = () => saveConfigFromForm();
+      document.getElementById("cfgProviderPreset").onchange = (e) => {
+        const presetKey = e.target.value || "custom";
+        applyProviderPresetToForm(presetKey, true);
+      };
       document.getElementById("btnRefresh").onclick = () => {
         if (!wasmModule) return;
         renderAll();
@@ -4997,6 +5056,10 @@
 
     async function loadModule() {
       aiConfig = readAiConfig();
+      if (!AI_PROVIDER_PRESETS[aiConfig.providerPreset]) {
+        aiConfig.providerPreset = "custom";
+      }
+      populateProviderPresetOptions();
       applyAiConfig();
 
       if (typeof GameModule === "function") {
