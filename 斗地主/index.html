@@ -3534,6 +3534,13 @@
           <input id="cfgAiName" type="text" placeholder="例如：qwen-plus" />
         </div>
         <div class="config-field">
+          <label for="cfgThinkingType">自动思考</label>
+          <select id="cfgThinkingType">
+            <option value="disabled">关闭自动思考（更快）</option>
+            <option value="enabled">开启自动思考（更稳）</option>
+          </select>
+        </div>
+        <div class="config-field">
           <label for="cfgApiKey">API Key</label>
           <input id="cfgApiKey" type="password" placeholder="填入你的 API Key" />
         </div>
@@ -3639,6 +3646,51 @@
         label: "智谱 AI / GLM-5.1",
         apiUrl: "https://open.bigmodel.cn/api/paas/v4",
         aiName: "GLM-5.1"
+      },
+      zhipu_glm_5: {
+        label: "智谱 AI / GLM-5",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-5"
+      },
+      zhipu_glm_5_turbo: {
+        label: "智谱 AI / GLM-5-Turbo",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-5-turbo"
+      },
+      zhipu_glm_4_7: {
+        label: "智谱 AI / GLM-4.7",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-4.7"
+      },
+      zhipu_glm_4_7_flash: {
+        label: "智谱 AI / GLM-4.7-Flash",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-4.7-flash"
+      },
+      zhipu_glm_4_7_flashx: {
+        label: "智谱 AI / GLM-4.7-FlashX",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-4.7-flashx"
+      },
+      zhipu_glm_4_6: {
+        label: "智谱 AI / GLM-4.6",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-4.6"
+      },
+      zhipu_glm_4_5_air: {
+        label: "智谱 AI / GLM-4.5-Air",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-4.5-air"
+      },
+      zhipu_glm_4_5_airx: {
+        label: "智谱 AI / GLM-4.5-AirX",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-4.5-airx"
+      },
+      zhipu_glm_4_5_flash: {
+        label: "智谱 AI / GLM-4.5-Flash",
+        apiUrl: "https://open.bigmodel.cn/api/paas/v4",
+        aiName: "glm-4.5-flash"
       }
     };
     const defaultAiConfig = {
@@ -3646,6 +3698,7 @@
       apiUrl: "",
       aiName: "qwen-plus",
       apiKey: "",
+      thinkingType: "disabled",
       showFaces: true,
       bgmEnabled: true,
       sfxEnabled: true,
@@ -3726,6 +3779,7 @@
       document.getElementById("cfgProviderPreset").value = aiConfig.providerPreset || "custom";
       document.getElementById("cfgApiUrl").value = aiConfig.apiUrl || "";
       document.getElementById("cfgAiName").value = aiConfig.aiName || "";
+      document.getElementById("cfgThinkingType").value = aiConfig.thinkingType || "disabled";
       document.getElementById("cfgApiKey").value = aiConfig.apiKey || "";
       document.getElementById("cfgShowFaces").checked = !!aiConfig.showFaces;
       document.getElementById("cfgBgmEnabled").checked = !!aiConfig.bgmEnabled;
@@ -3779,6 +3833,7 @@
         providerPreset,
         apiUrl: document.getElementById("cfgApiUrl").value.trim(),
         aiName: document.getElementById("cfgAiName").value.trim(),
+        thinkingType: document.getElementById("cfgThinkingType").value || "disabled",
         apiKey: document.getElementById("cfgApiKey").value.trim(),
         showFaces: document.getElementById("cfgShowFaces").checked,
         bgmEnabled: document.getElementById("cfgBgmEnabled").checked,
@@ -3877,20 +3932,28 @@
         throw new Error("请先在配置里填好 API 网址、AI 名字和 API Key。");
       }
 
+      const payload = {
+        model: aiConfig.aiName,
+        temperature: 0.3,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      };
+
+      if (String(aiConfig.apiUrl || "").includes("open.bigmodel.cn")) {
+        payload.thinking = {
+          type: aiConfig.thinkingType === "enabled" ? "enabled" : "disabled"
+        };
+      }
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${aiConfig.apiKey}`
         },
-        body: JSON.stringify({
-          model: aiConfig.aiName,
-          temperature: 0.3,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ]
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
