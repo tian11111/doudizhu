@@ -522,6 +522,14 @@
       background: linear-gradient(180deg, #3b82f6, #2563eb);
     }
 
+    .btn-ai {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+    }
+
+    .btn-config {
+      background: linear-gradient(180deg, #14b8a6, #0f766e);
+    }
+
     .btn-pass,
     .btn-refresh,
     .btn-audio {
@@ -563,6 +571,188 @@
       display: block;
     }
 
+    .ai-panel {
+      width: calc(100% - 16px);
+      margin: 12px auto 0;
+      display: none;
+      background: rgba(0,0,0,0.36);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 14px 14px 12px;
+      backdrop-filter: blur(6px);
+      box-shadow: var(--shadow);
+    }
+
+    .ai-panel.show {
+      display: block;
+    }
+
+    .ai-panel-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #ffe7a9;
+      margin-bottom: 10px;
+    }
+
+    .ai-panel-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .ai-section {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .ai-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .ai-section h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #fff2b8;
+    }
+
+    .ai-section p,
+    .ai-section li {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.65;
+      color: #eefcf5;
+      white-space: pre-wrap;
+    }
+
+    .ai-section ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .config-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(2, 6, 23, 0.58);
+      z-index: 60;
+      backdrop-filter: blur(8px);
+    }
+
+    .config-modal.show {
+      display: flex;
+    }
+
+    .config-card {
+      width: min(100%, 560px);
+      max-height: min(88vh, 760px);
+      overflow-y: auto;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(19,78,74,0.96), rgba(15,23,42,0.96));
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.38);
+      padding: 18px 16px 16px;
+    }
+
+    .config-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #fef3c7;
+      margin-bottom: 6px;
+    }
+
+    .config-tip {
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .config-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .config-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #d1fae5;
+    }
+
+    .config-field input {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      border-radius: 14px;
+      padding: 11px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .config-field input::placeholder {
+      color: rgba(255,255,255,0.44);
+    }
+
+    .config-switches {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .config-switch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 12px;
+      color: #eefcf5;
+    }
+
+    .config-switch input {
+      width: 18px;
+      height: 18px;
+      accent-color: #f59e0b;
+    }
+
+    .config-actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .config-actions button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+      box-shadow: var(--shadow);
+    }
+
+    .btn-config-save {
+      background: linear-gradient(180deg, #22c55e, #16a34a);
+    }
+
+    .btn-config-close {
+      background: linear-gradient(180deg, #8b93a1, #6b7280);
+    }
+
     @media (min-width: 769px) {
       .title {
         font-size: 32px;
@@ -576,6 +766,7 @@
       .rob-panel,
       .hand-wrap,
       .controls,
+      .ai-panel,
       .log-toggle,
       .log {
         width: calc(100% - 24px);
@@ -3279,11 +3470,16 @@
       <div class="controls">
         <button class="action btn-start" id="btnStart">开始游戏</button>
         <button class="action btn-play" id="btnPlay">出牌</button>
+        <button class="action btn-ai" id="btnAiAction">AI提示</button>
         <button class="action btn-pass" id="btnPass">过牌</button>
         <button class="action btn-refresh" id="btnRefresh">刷新</button>
-        <button class="action btn-audio" id="btnFaceToggle">牌面开</button>
-        <button class="action btn-audio" id="btnBgmToggle">BGM开</button>
-        <button class="action btn-audio" id="btnSfxToggle">音效开</button>
+        <button class="action btn-config" id="btnConfig">配置</button>
+      </div>
+
+      <div class="ai-panel" id="aiPanel">
+        <div class="ai-panel-title" id="aiPanelTitle">AI 提示</div>
+        <div class="ai-panel-subtitle" id="aiPanelSubtitle">这里会显示局中提示或局后复盘。</div>
+        <div id="aiPanelBody"></div>
       </div>
 
       <button class="log-toggle" id="logToggle">日志</button>
@@ -3299,6 +3495,52 @@
       <audio id="biggerAudio" src="./大你.mp3" preload="auto"></audio>
       <audio id="jokerBombAudio" src="./王炸.mp3" preload="auto"></audio>
       <audio id="planeAudio" src="./飞机.mp3" preload="auto"></audio>
+    </div>
+  </div>
+
+  <div class="config-modal" id="configModal">
+    <div class="config-card">
+      <div class="config-title">AI 配置</div>
+      <div class="config-tip">
+        这里保存 API 地址、模型名和开关项。配置会保存在当前浏览器本地。<br>
+        如果接口是兼容 OpenAI Chat Completions 的地址，填到这里就能直接调用。
+      </div>
+      <div class="config-grid">
+        <div class="config-field">
+          <label for="cfgApiUrl">API 网址</label>
+          <input id="cfgApiUrl" type="text" placeholder="例如：https://dashscope.aliyuncs.com/compatible-mode/v1" />
+        </div>
+        <div class="config-field">
+          <label for="cfgAiName">AI 名字 / 模型名</label>
+          <input id="cfgAiName" type="text" placeholder="例如：qwen-plus" />
+        </div>
+        <div class="config-field">
+          <label for="cfgApiKey">API Key</label>
+          <input id="cfgApiKey" type="password" placeholder="填入你的 API Key" />
+        </div>
+        <div class="config-switches">
+          <label class="config-switch">
+            <span>显示牌面图片</span>
+            <input id="cfgShowFaces" type="checkbox" />
+          </label>
+          <label class="config-switch">
+            <span>BGM 开关</span>
+            <input id="cfgBgmEnabled" type="checkbox" />
+          </label>
+          <label class="config-switch">
+            <span>音效开关</span>
+            <input id="cfgSfxEnabled" type="checkbox" />
+          </label>
+          <label class="config-switch">
+            <span>局后自动分析</span>
+            <input id="cfgAutoReview" type="checkbox" />
+          </label>
+        </div>
+      </div>
+      <div class="config-actions">
+        <button class="btn-config-close" id="btnConfigClose">关闭</button>
+        <button class="btn-config-save" id="btnConfigSave">保存配置</button>
+      </div>
     </div>
   </div>
 
@@ -3364,6 +3606,20 @@
     let gameState = null;
     let prevState = null;
     let selectedIndices = new Set();
+    let replayEvents = [];
+    let aiBusy = false;
+
+    const AI_CONFIG_KEY = "doudizhu_ai_config_v1";
+    const defaultAiConfig = {
+      apiUrl: "",
+      aiName: "qwen-plus",
+      apiKey: "",
+      showFaces: true,
+      bgmEnabled: true,
+      sfxEnabled: true,
+      autoReview: false
+    };
+    let aiConfig = { ...defaultAiConfig };
 
     let bgmEnabled = true;
     let sfxEnabled = true;
@@ -3376,8 +3632,14 @@
     const logToggle = document.getElementById("logToggle");
     const robPanel = document.getElementById("robPanel");
     const resultPanel = document.getElementById("resultPanel");
+    const aiPanel = document.getElementById("aiPanel");
+    const aiPanelTitle = document.getElementById("aiPanelTitle");
+    const aiPanelSubtitle = document.getElementById("aiPanelSubtitle");
+    const aiPanelBody = document.getElementById("aiPanelBody");
+    const configModal = document.getElementById("configModal");
     const toastWrap = document.getElementById("toastWrap");
     const btnStart = document.getElementById("btnStart");
+    const btnAiAction = document.getElementById("btnAiAction");
 
     const bgmAudio = document.getElementById("bgmAudio");
     const loseAudio = document.getElementById("loseAudio");
@@ -3401,6 +3663,220 @@
     [dealAudio, bombAudio, playCardAudio, passAudio, biggerAudio, jokerBombAudio, planeAudio]
       .filter(Boolean)
       .forEach(a => { a.volume = 0.92; });
+
+    function readAiConfig() {
+      try {
+        const raw = localStorage.getItem(AI_CONFIG_KEY);
+        if (!raw) return { ...defaultAiConfig };
+        return { ...defaultAiConfig, ...JSON.parse(raw) };
+      } catch (_) {
+        return { ...defaultAiConfig };
+      }
+    }
+
+    function saveAiConfig() {
+      localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(aiConfig));
+    }
+
+    function syncConfigForm() {
+      document.getElementById("cfgApiUrl").value = aiConfig.apiUrl || "";
+      document.getElementById("cfgAiName").value = aiConfig.aiName || "";
+      document.getElementById("cfgApiKey").value = aiConfig.apiKey || "";
+      document.getElementById("cfgShowFaces").checked = !!aiConfig.showFaces;
+      document.getElementById("cfgBgmEnabled").checked = !!aiConfig.bgmEnabled;
+      document.getElementById("cfgSfxEnabled").checked = !!aiConfig.sfxEnabled;
+      document.getElementById("cfgAutoReview").checked = !!aiConfig.autoReview;
+    }
+
+    function applyAiConfig() {
+      showCardFaces = !!aiConfig.showFaces;
+      bgmEnabled = !!aiConfig.bgmEnabled;
+      sfxEnabled = !!aiConfig.sfxEnabled;
+      updateAudioButtons();
+
+      if (!bgmEnabled) {
+        stopBgm();
+      } else if (audioUnlocked && gameState && !gameState.gameOver) {
+        playBgm();
+      }
+
+      if (!sfxEnabled) {
+        stopAllSfx();
+      }
+
+      if (gameState) {
+        renderStatus(gameState);
+        renderHand(gameState);
+      }
+    }
+
+    function openConfigModal() {
+      syncConfigForm();
+      configModal.classList.add("show");
+    }
+
+    function closeConfigModal() {
+      configModal.classList.remove("show");
+    }
+
+    function saveConfigFromForm() {
+      aiConfig = {
+        ...aiConfig,
+        apiUrl: document.getElementById("cfgApiUrl").value.trim(),
+        aiName: document.getElementById("cfgAiName").value.trim(),
+        apiKey: document.getElementById("cfgApiKey").value.trim(),
+        showFaces: document.getElementById("cfgShowFaces").checked,
+        bgmEnabled: document.getElementById("cfgBgmEnabled").checked,
+        sfxEnabled: document.getElementById("cfgSfxEnabled").checked,
+        autoReview: document.getElementById("cfgAutoReview").checked
+      };
+      saveAiConfig();
+      applyAiConfig();
+      closeConfigModal();
+      notify("AI 配置已保存。", "success", true, 1800);
+    }
+
+    function showAiPanel(title, subtitle, sections) {
+      aiPanelTitle.textContent = title || "AI 输出";
+      aiPanelSubtitle.textContent = subtitle || "";
+      aiPanelBody.innerHTML = "";
+
+      (sections || []).forEach(section => {
+        const box = document.createElement("div");
+        box.className = "ai-section";
+        const heading = document.createElement("h4");
+        heading.textContent = section.title || "说明";
+        box.appendChild(heading);
+
+        if (Array.isArray(section.content)) {
+          const list = document.createElement("ul");
+          section.content.forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            list.appendChild(li);
+          });
+          box.appendChild(list);
+        } else {
+          const p = document.createElement("p");
+          p.textContent = section.content || "暂无内容";
+          box.appendChild(p);
+        }
+
+        aiPanelBody.appendChild(box);
+      });
+
+      aiPanel.classList.add("show");
+    }
+
+    function clearAiPanel() {
+      aiPanel.classList.remove("show");
+      aiPanelTitle.textContent = "AI 提示";
+      aiPanelSubtitle.textContent = "这里会显示局中提示或局后复盘。";
+      aiPanelBody.innerHTML = "";
+    }
+
+    function updateAiActionButton() {
+      if (!btnAiAction) return;
+      btnAiAction.textContent = gameState && gameState.gameOver ? "AI分析" : "AI提示";
+      btnAiAction.title = gameState && gameState.gameOver ? "赛后复盘" : "局中建议";
+      btnAiAction.disabled = aiBusy;
+      btnAiAction.style.opacity = aiBusy ? "0.72" : "1";
+    }
+
+    function normalizeApiEndpoint(baseUrl) {
+      const base = String(baseUrl || "").trim().replace(/\/+$/, "");
+      if (!base) return "";
+      if (/\/chat\/completions$/i.test(base)) return base;
+      return `${base}/chat/completions`;
+    }
+
+    function extractMessageContent(data) {
+      const content = data?.choices?.[0]?.message?.content;
+      if (typeof content === "string") return content;
+      if (Array.isArray(content)) {
+        return content
+          .map(part => typeof part === "string" ? part : part?.text || "")
+          .join("")
+          .trim();
+      }
+      return "";
+    }
+
+    function tryParseJsonBlock(text) {
+      if (!text) return null;
+      try {
+        return JSON.parse(text);
+      } catch (_) {}
+      const match = String(text).match(/\{[\s\S]*\}/);
+      if (!match) return null;
+      try {
+        return JSON.parse(match[0]);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function requestAiJSON(systemPrompt, userPrompt) {
+      const endpoint = normalizeApiEndpoint(aiConfig.apiUrl);
+      if (!endpoint || !aiConfig.aiName || !aiConfig.apiKey) {
+        throw new Error("请先在配置里填好 API 网址、AI 名字和 API Key。");
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${aiConfig.apiKey}`
+        },
+        body: JSON.stringify({
+          model: aiConfig.aiName,
+          temperature: 0.3,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`接口返回 ${response.status}：${text.slice(0, 240)}`);
+      }
+
+      const data = await response.json();
+      const content = extractMessageContent(data);
+      const parsed = tryParseJsonBlock(content);
+      if (!parsed) {
+        throw new Error("AI 返回的不是有效 JSON。");
+      }
+      return parsed;
+    }
+
+    function summarizeCurrentState(state) {
+      if (!state) return {};
+      return {
+        landlordIndex: state.landlordIndex,
+        currentPlayer: state.currentPlayer,
+        lastPlayer: state.lastPlayer,
+        gameRound: state.gameRound,
+        lastPlayType: state.lastPlayType,
+        lastPlayedText: state.lastPlayedText,
+        myHand: state.hand,
+        myCardCount: state.myCardCount,
+        ai1CardCount: state.ai1CardCount,
+        ai2CardCount: state.ai2CardCount,
+        myScore: state.myScore,
+        ai1Score: state.ai1Score,
+        ai2Score: state.ai2Score
+      };
+    }
+
+    function recordReplayEvent(event) {
+      replayEvents.push({
+        ts: new Date().toISOString(),
+        ...event
+      });
+    }
 
     function appendLog(text) {
       const time = new Date().toLocaleTimeString();
@@ -3517,9 +3993,12 @@
     }
 
     function updateAudioButtons() {
-      document.getElementById("btnFaceToggle").textContent = showCardFaces ? "牌面开" : "牌面关";
-      document.getElementById("btnBgmToggle").textContent = bgmEnabled ? "BGM开" : "BGM关";
-      document.getElementById("btnSfxToggle").textContent = sfxEnabled ? "音效开" : "音效关";
+      const cfgShowFaces = document.getElementById("cfgShowFaces");
+      const cfgBgmEnabled = document.getElementById("cfgBgmEnabled");
+      const cfgSfxEnabled = document.getElementById("cfgSfxEnabled");
+      if (cfgShowFaces) cfgShowFaces.checked = !!showCardFaces;
+      if (cfgBgmEnabled) cfgBgmEnabled.checked = !!bgmEnabled;
+      if (cfgSfxEnabled) cfgSfxEnabled.checked = !!sfxEnabled;
     }
 
     function stopAllSfx() {
@@ -3891,6 +4370,137 @@
       return `已选：${type}`;
     }
 
+    function buildHintPayload() {
+      const selected = Array.from(selectedIndices).sort((a, b) => a - b);
+      const selectedCards = selected.map(i => gameState?.hand?.[i]).filter(Boolean);
+      return {
+        selectedIndices: selected,
+        selectedCards,
+        selectedHint: selected.length ? estimatePlayHint(selected) : "尚未选牌",
+        state: summarizeCurrentState(gameState),
+        context: {
+          role: playerRole(0, gameState),
+          currentTypeToBeat: playTypeName(gameState?.lastPlayType),
+          currentTypeToBeatRaw: gameState?.lastPlayType,
+          isMyTurn: !!(gameState && gameState.landlordRobbed && !gameState.gameOver && gameState.currentPlayer === 0)
+        }
+      };
+    }
+
+    function buildReviewPayload() {
+      return {
+        finalState: summarizeCurrentState(gameState),
+        landlordCards: gameState?.landlordCards || [],
+        winner: gameState?.myCardCount === 0 ? "你" : (gameState?.ai1CardCount === 0 ? "电脑1" : (gameState?.ai2CardCount === 0 ? "电脑2" : "未知")),
+        replayEvents
+      };
+    }
+
+    async function requestAiHint() {
+      if (!gameState) throw new Error("请先开始游戏。");
+      if (!gameState.landlordRobbed) throw new Error("现在还是抢地主阶段，等进入出牌阶段再问我。");
+
+      const payload = buildHintPayload();
+      const systemPrompt = [
+        "你是斗地主出牌建议助手。",
+        "请基于用户当前局面输出 JSON。",
+        "只输出 JSON，不要额外解释。",
+        "字段必须包含：recommended_play、why_recommended、avoid_bomb_reason、style。"
+      ].join("");
+      const userPrompt = [
+        "请结合当前局势和用户已选牌，回答：",
+        "1. 为什么推荐这手牌；",
+        "2. 为什么不建议现在出炸弹；",
+        "3. 当前局势更偏保守还是进攻。",
+        "如果用户没选牌，请先给出推荐动作。",
+        "",
+        JSON.stringify(payload, null, 2)
+      ].join("\n");
+
+      return requestAiJSON(systemPrompt, userPrompt);
+    }
+
+    async function requestAiReview() {
+      if (!gameState || !gameState.gameOver) {
+        throw new Error("这局还没结束，暂时不能做赛后复盘。");
+      }
+
+      const payload = buildReviewPayload();
+      const systemPrompt = [
+        "你是斗地主赛后复盘助手。",
+        "请基于整局回放输出 JSON。",
+        "只输出 JSON，不要额外解释。",
+        "字段必须包含：关键转折点、错失最优出牌、高风险操作、胜负原因总结。"
+      ].join("");
+      const userPrompt = [
+        "请复盘这局斗地主，输出四个部分：",
+        "1. 关键转折点",
+        "2. 错失最优出牌",
+        "3. 高风险操作",
+        "4. 胜负原因总结",
+        "",
+        JSON.stringify(payload, null, 2)
+      ].join("\n");
+
+      return requestAiJSON(systemPrompt, userPrompt);
+    }
+
+    function normalizeToList(value) {
+      if (Array.isArray(value)) return value.map(v => String(v));
+      if (!value) return [];
+      return [String(value)];
+    }
+
+    function renderHintResult(result) {
+      const recommended = result.recommended_play || result.recommendedPlay || "未给出具体牌型";
+      showAiPanel(
+        "AI 提示",
+        `${aiConfig.aiName || "AI"} 给你的当前回合建议`,
+        [
+          { title: "推荐动作", content: recommended },
+          { title: "为什么推荐这手牌", content: result.why_recommended || "AI 没有给出解释。" },
+          { title: "为什么不建议出炸弹", content: result.avoid_bomb_reason || "当前没有额外的炸弹风险说明。" },
+          { title: "当前局势是保守还是进攻", content: result.style || "未判断" }
+        ]
+      );
+    }
+
+    function renderReviewResult(result) {
+      showAiPanel(
+        "AI 分析",
+        `${aiConfig.aiName || "AI"} 给出的赛后复盘`,
+        [
+          { title: "关键转折点", content: normalizeToList(result["关键转折点"] || result.key_turning_points || result.turning_points) },
+          { title: "错失最优出牌", content: normalizeToList(result["错失最优出牌"] || result.missed_best_play) },
+          { title: "高风险操作", content: normalizeToList(result["高风险操作"] || result.high_risk_ops) },
+          { title: "胜负原因总结", content: result["胜负原因总结"] || result.win_reason_summary || "AI 没有给出总结。" }
+        ]
+      );
+    }
+
+    async function onAiAction() {
+      try {
+        aiBusy = true;
+        updateAiActionButton();
+        notify(gameState && gameState.gameOver ? "AI 正在复盘这局。" : "AI 正在分析当前回合。", "info", true, 1400);
+
+        if (gameState && gameState.gameOver) {
+          const result = await requestAiReview();
+          renderReviewResult(result);
+          notify("AI 复盘已生成。", "success", true, 1800);
+        } else {
+          const result = await requestAiHint();
+          renderHintResult(result);
+          notify("AI 提示已生成。", "success", true, 1800);
+        }
+      } catch (err) {
+        notify(`AI 调用失败：${err.message}`, "error", true, 3200);
+      } finally {
+        aiBusy = false;
+        updateAiActionButton();
+      }
+    }
+
     function renderResultPanel(state) {
       if (!state || !state.gameOver) {
         resultPanel.classList.remove('show');
@@ -4025,6 +4635,7 @@
       renderStatus(gameState);
       renderHand(gameState);
       refreshStartButton();
+      updateAiActionButton();
     }
 
     function mallocIntArray(values) {
@@ -4074,6 +4685,10 @@
       } else {
         playLoseSound();
       }
+
+      if (aiConfig.autoReview && !aiBusy) {
+        onAiAction().catch(() => {});
+      }
     }
 
     async function runAiRobIfNeeded() {
@@ -4081,6 +4696,7 @@
 
       while (!gameState.landlordRobbed && gameState.currentPlayer !== 0 && !gameState.gameOver) {
         const actor = gameState.currentPlayer;
+        const before = JSON.parse(JSON.stringify(gameState));
         notify(`${playerName(actor)} 正在决定是否抢地主...`, "info", true, 1200);
         await sleep(500);
 
@@ -4091,6 +4707,12 @@
 
         wasmModule._ai_rob_landlord(actor);
         renderAll();
+        recordReplayEvent({
+          actor: playerName(actor),
+          action: gameState.landlordRobbed ? "rob_landlord" : "no_rob_landlord",
+          before: summarizeCurrentState(before),
+          after: summarizeCurrentState(gameState)
+        });
 
         if (gameState.landlordRobbed) {
           playSfx(dealAudio);
@@ -4118,6 +4740,14 @@
         updateState();
         renderStatus(gameState);
         renderHand(gameState);
+        recordReplayEvent({
+          actor: playerName(before.currentPlayer),
+          action: gameState.lastPlayer === before.currentPlayer ? "play" : "pass",
+          cards: gameState.lastPlayer === before.currentPlayer ? gameState.lastPlayedText : "过牌",
+          playType: gameState.lastPlayer === before.currentPlayer ? playTypeName(gameState.lastPlayType) : "过牌",
+          before: summarizeCurrentState(before),
+          after: summarizeCurrentState(gameState)
+        });
 
         const msg = describeAIAction(before, gameState);
         if (msg) appendLog(msg);
@@ -4154,9 +4784,16 @@
       wasmModule._game_init();
       selectedIndices.clear();
       prevState = null;
+      replayEvents = [];
       clearPlayedAreas();
+      clearAiPanel();
 
       renderAll();
+      recordReplayEvent({
+        actor: "system",
+        action: "start_game",
+        snapshot: summarizeCurrentState(gameState)
+      });
 
       // 保险一点：开始游戏后立刻同步一次抢地主面板显示
       if (gameState && !gameState.landlordRobbed) {
@@ -4194,8 +4831,15 @@
         return notify("错误：WASM 没导出 rob_landlord，前端调不到。", "error", true, 3000);
       }
 
+      const before = JSON.parse(JSON.stringify(gameState));
       wasmModule._rob_landlord(0);
       renderAll();
+      recordReplayEvent({
+        actor: "你",
+        action: "rob_landlord",
+        before: summarizeCurrentState(before),
+        after: summarizeCurrentState(gameState)
+      });
       notify("你选择了抢地主。", "success", true, 1500);
 
       if (gameState.landlordRobbed) {
@@ -4214,9 +4858,16 @@
       if (gameState.landlordRobbed) return notify("地主已经确定了。", "warn", true, 1800);
       if (gameState.currentPlayer !== 0) return notify("现在不是你决定。", "warn", true, 1800);
 
+      const before = JSON.parse(JSON.stringify(gameState));
       notify("你选择了不抢。", "info", true, 1500);
       gameState.currentPlayer = 1;
       renderStatus(gameState);
+      recordReplayEvent({
+        actor: "你",
+        action: "no_rob_landlord",
+        before: summarizeCurrentState(before),
+        after: summarizeCurrentState(gameState)
+      });
 
       await runAiRobIfNeeded();
 
@@ -4251,6 +4902,14 @@
 
       selectedIndices.clear();
       renderAll();
+      recordReplayEvent({
+        actor: "你",
+        action: "play",
+        cards: gameState.lastPlayedText || selected.map(i => before.hand?.[i]).filter(Boolean).join(" "),
+        playType: playTypeName(gameState.lastPlayType),
+        before: summarizeCurrentState(before),
+        after: summarizeCurrentState(gameState)
+      });
       playSfx(choosePlayAudio(before, gameState, 0));
       notify(`你出了：${gameState.lastPlayedText || "未知牌面"}（${playTypeName(gameState.lastPlayType)}）`, "success", true, 1500);
 
@@ -4273,6 +4932,7 @@
       if (!gameState.landlordRobbed) return notify("还在抢地主阶段，不能过牌。", "warn", true, 2200);
       if (gameState.currentPlayer !== 0) return notify("还没轮到你过牌。", "warn", true, 1800);
 
+      const before = JSON.parse(JSON.stringify(gameState));
       const result = wasmModule._game_pass();
       if (!result) {
         renderAll();
@@ -4281,6 +4941,12 @@
 
       selectedIndices.clear();
       renderAll();
+      recordReplayEvent({
+        actor: "你",
+        action: "pass",
+        before: summarizeCurrentState(before),
+        after: summarizeCurrentState(gameState)
+      });
       playSfx(passAudio);
       renderPlayedArea(0, "过牌");
       notify("你选择了过牌。", "info", true, 1500);
@@ -4301,7 +4967,11 @@
     function bindButtons() {
       document.getElementById("btnStart").onclick = () => startGame();
       document.getElementById("btnPlay").onclick = () => playSelected();
+      document.getElementById("btnAiAction").onclick = () => onAiAction();
       document.getElementById("btnPass").onclick = () => passTurn();
+      document.getElementById("btnConfig").onclick = () => openConfigModal();
+      document.getElementById("btnConfigClose").onclick = () => closeConfigModal();
+      document.getElementById("btnConfigSave").onclick = () => saveConfigFromForm();
       document.getElementById("btnRefresh").onclick = () => {
         if (!wasmModule) return;
         renderAll();
@@ -4314,44 +4984,21 @@
       document.getElementById("btnRob").onclick = () => robLandlord();
       document.getElementById("btnNoRob").onclick = () => noRobLandlord();
 
-      document.getElementById("btnFaceToggle").onclick = () => {
-        showCardFaces = !showCardFaces;
-        updateAudioButtons();
-        if (gameState) {
-          renderStatus(gameState);
-          renderHand(gameState);
-        }
-        notify(showCardFaces ? "已开启牌面图片。" : "已关闭牌面图片，切成纯文字更流畅。", "info", true, 1600);
-      };
-
-      document.getElementById("btnBgmToggle").onclick = () => {
-        bgmEnabled = !bgmEnabled;
-        updateAudioButtons();
-
-        if (!bgmEnabled) {
-          stopBgm();
-        } else if (audioUnlocked && gameState && !gameState.gameOver) {
-          playBgm();
-        }
-      };
-
-      document.getElementById("btnSfxToggle").onclick = () => {
-        sfxEnabled = !sfxEnabled;
-        updateAudioButtons();
-
-        if (!sfxEnabled) {
-          stopAllSfx();
-        }
-      };
-
       logToggle.onclick = () => {
         document.body.classList.toggle("show-log");
         setLogToggleText();
         notify(document.body.classList.contains("show-log") ? "日志已展开。" : "日志已收起。", "info", false, 1200);
       };
+
+      configModal.onclick = (e) => {
+        if (e.target === configModal) closeConfigModal();
+      };
     }
 
     async function loadModule() {
+      aiConfig = readAiConfig();
+      applyAiConfig();
+
       if (typeof GameModule === "function") {
         wasmModule = await GameModule();
       } else if (typeof Module !== "undefined") {
@@ -4364,6 +5011,7 @@
       setLogToggleText();
       updateAudioButtons();
       refreshStartButton();
+      updateAiActionButton();
       notify("WASM 模块加载完成。先点开始游戏。", "success", true, 2200);
       notify("通知弹窗已启用。", "info", false, 1400);
     }
