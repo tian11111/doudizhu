@@ -633,6 +633,87 @@
       padding-left: 18px;
     }
 
+    .ai-chat {
+      margin-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 12px;
+    }
+
+    .ai-chat-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff2b8;
+      margin-bottom: 8px;
+    }
+
+    .ai-chat-list {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .ai-chat-msg {
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .ai-chat-msg.user {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fff7dd;
+    }
+
+    .ai-chat-msg.assistant {
+      background: rgba(255,255,255,0.05);
+      color: #eefcf5;
+    }
+
+    .ai-chat-role {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      color: #fef3c7;
+    }
+
+    .ai-chat-form {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .ai-chat-input {
+      width: 100%;
+      min-height: 74px;
+      resize: vertical;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      padding: 10px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .ai-chat-send {
+      border: none;
+      border-radius: 14px;
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+      box-shadow: var(--shadow);
+      min-width: 84px;
+    }
+
     .config-modal {
       position: fixed;
       inset: 0;
@@ -3495,6 +3576,14 @@
         <div class="ai-panel-title" id="aiPanelTitle">AI 提示</div>
         <div class="ai-panel-subtitle" id="aiPanelSubtitle">这里会显示局中提示或局后复盘。</div>
         <div id="aiPanelBody"></div>
+        <div class="ai-chat" id="aiChat">
+          <div class="ai-chat-title">继续追问 AI</div>
+          <div class="ai-chat-list" id="aiChatList"></div>
+          <div class="ai-chat-form">
+            <textarea class="ai-chat-input" id="aiChatInput" placeholder="比如：你刚才为什么推荐这手？如果我想保住对子，还有什么可选方案？"></textarea>
+            <button class="ai-chat-send" id="btnAiChatSend">追问</button>
+          </div>
+        </div>
       </div>
 
       <button class="log-toggle" id="logToggle">日志</button>
@@ -3634,6 +3723,9 @@
     let selectedIndices = new Set();
     let replayEvents = [];
     let aiBusy = false;
+    let aiConversation = [];
+    let lastAiSummary = "";
+    let lastAiMode = "hint";
 
     const AI_CONFIG_KEY = "doudizhu_ai_config_v1";
     const AI_PROVIDER_PRESETS = {
@@ -3721,6 +3813,8 @@
     const aiPanelTitle = document.getElementById("aiPanelTitle");
     const aiPanelSubtitle = document.getElementById("aiPanelSubtitle");
     const aiPanelBody = document.getElementById("aiPanelBody");
+    const aiChatList = document.getElementById("aiChatList");
+    const aiChatInput = document.getElementById("aiChatInput");
     const configModal = document.getElementById("configModal");
     const toastWrap = document.getElementById("toastWrap");
     const btnStart = document.getElementById("btnStart");
@@ -3883,6 +3977,28 @@
       aiPanelTitle.textContent = "AI 提示";
       aiPanelSubtitle.textContent = "这里会显示局中提示或局后复盘。";
       aiPanelBody.innerHTML = "";
+      aiConversation = [];
+      lastAiSummary = "";
+      lastAiMode = "hint";
+      renderAiConversation();
+    }
+
+    function renderAiConversation() {
+      if (!aiChatList) return;
+      aiChatList.innerHTML = "";
+      aiConversation.forEach(item => {
+        const msg = document.createElement("div");
+        msg.className = `ai-chat-msg ${item.role}`;
+        const role = document.createElement("span");
+        role.className = "ai-chat-role";
+        role.textContent = item.role === "user" ? "你" : (aiConfig.aiName || "AI");
+        const text = document.createElement("div");
+        text.textContent = item.content || "";
+        msg.appendChild(role);
+        msg.appendChild(text);
+        aiChatList.appendChild(msg);
+      });
+      aiChatList.scrollTop = aiChatList.scrollHeight;
     }
 
     function updateAiActionButton() {
@@ -3968,6 +4084,50 @@
         throw new Error("AI 返回的不是有效 JSON。");
       }
       return parsed;
+    }
+
+    async function requestAiText(systemPrompt, userPrompt, extraMessages = []) {
+      const endpoint = normalizeApiEndpoint(aiConfig.apiUrl);
+      if (!endpoint || !aiConfig.aiName || !aiConfig.apiKey) {
+        throw new Error("请先在配置里填好 API 网址、AI 名字和 API Key。");
+      }
+
+      const payload = {
+        model: aiConfig.aiName,
+        temperature: 0.35,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...extraMessages,
+          { role: "user", content: userPrompt }
+        ]
+      };
+
+      if (String(aiConfig.apiUrl || "").includes("open.bigmodel.cn")) {
+        payload.thinking = {
+          type: aiConfig.thinkingType === "enabled" ? "enabled" : "disabled"
+        };
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${aiConfig.apiKey}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`接口返回 ${response.status}：${text.slice(0, 240)}`);
+      }
+
+      const data = await response.json();
+      const content = extractMessageContent(data);
+      if (!content) {
+        throw new Error("AI 没有返回可读文本。");
+      }
+      return content.trim();
     }
 
     function summarizeCurrentState(state) {
@@ -4488,19 +4648,130 @@
       return `已选：${type}`;
     }
 
+    function cardRankOf(name) {
+      const m = String(name || "").match(/^(10|[3-9JQKA2]|小王|大王)/);
+      const key = m ? m[1] : String(name || "");
+      const order = ["3","4","5","6","7","8","9","10","J","Q","K","A","2","小王","大王"];
+      return order.indexOf(key);
+    }
+
+    function selectedMeta(selected) {
+      const cards = selected.map(i => gameState?.hand?.[i]).filter(Boolean);
+      const ranks = cards.map(cardRankOf).filter(v => v >= 0).sort((a, b) => a - b);
+      const countMap = {};
+      ranks.forEach(r => { countMap[r] = (countMap[r] || 0) + 1; });
+      const uniq = Object.keys(countMap).map(Number).sort((a, b) => a - b);
+      const vals = Object.values(countMap).sort((a, b) => a - b);
+      let type = "";
+      let mainRank = ranks.length ? ranks[ranks.length - 1] : -1;
+
+      if (ranks.length === 1) {
+        type = "单张";
+      } else if (ranks.length === 2 && vals.length === 1 && vals[0] === 2) {
+        type = "对子";
+        mainRank = uniq[0];
+      } else if (ranks.length === 2 && ranks[0] === 13 && ranks[1] === 14) {
+        type = "王炸";
+        mainRank = 14;
+      } else if (ranks.length === 3 && vals.length === 1 && vals[0] === 3) {
+        type = "三张";
+        mainRank = uniq[0];
+      } else if (ranks.length === 4 && vals.length === 1 && vals[0] === 4) {
+        type = "炸弹";
+        mainRank = uniq[0];
+      } else if (ranks.length === 4 && vals.join(",") === "1,3") {
+        type = "三带一";
+        mainRank = Number(Object.keys(countMap).find(k => countMap[k] === 3));
+      } else if (ranks.length === 5 && vals.join(",") === "2,3") {
+        type = "三带二";
+        mainRank = Number(Object.keys(countMap).find(k => countMap[k] === 3));
+      } else if (ranks.length >= 5 && vals.every(v => v === 1) && ranks[ranks.length - 1] <= 11 && ranks.every((p, i) => i === 0 || p === ranks[i - 1] + 1)) {
+        type = "顺子";
+        mainRank = ranks[0];
+      } else if (ranks.length >= 6 && ranks.length % 2 === 0 && vals.every(v => v === 2) && uniq[uniq.length - 1] <= 11 && uniq.every((p, i) => i === 0 || p === uniq[i - 1] + 1)) {
+        type = "连对";
+        mainRank = uniq[0];
+      }
+
+      return {
+        cards,
+        ranks,
+        type,
+        count: cards.length,
+        mainRank
+      };
+    }
+
+    function canSelectedBeatLast(selected) {
+      if (!gameState || !selected.length) {
+        return { canBeat: false, reason: "你还没选牌。" };
+      }
+
+      const meta = selectedMeta(selected);
+      if (!meta.type) {
+        return { canBeat: false, reason: "当前选择的牌型不合法。" };
+      }
+
+      if (!gameState.lastPlayType) {
+        return { canBeat: true, reason: "当前是新一轮，你可以自由先手。" };
+      }
+
+      const lastType = playTypeName(gameState.lastPlayType);
+      const lastCards = splitCards(gameState.lastPlayedText);
+      const lastRanks = lastCards.map(cardRankOf).filter(v => v >= 0).sort((a, b) => a - b);
+      const lastMainRank = lastRanks.length ? lastRanks[lastRanks.length - 1] : -1;
+
+      if (meta.type === "王炸") {
+        return { canBeat: true, reason: "王炸可以压所有牌。" };
+      }
+
+      if (meta.type === "炸弹" && gameState.lastPlayType !== 12) {
+        if (gameState.lastPlayType === 11) {
+          return {
+            canBeat: meta.mainRank > lastMainRank,
+            reason: meta.mainRank > lastMainRank ? "你的炸弹点数更大。" : "对面的炸弹点数更大。"
+          };
+        }
+        return { canBeat: true, reason: "炸弹可以压非王炸牌型。" };
+      }
+
+      if (meta.type !== lastType) {
+        return { canBeat: false, reason: `当前要跟 ${lastType}，你选的是 ${meta.type}。` };
+      }
+
+      if (meta.count !== lastCards.length && (meta.type === "顺子" || meta.type === "连对")) {
+        return { canBeat: false, reason: `${meta.type} 长度不一致，压不过上家。` };
+      }
+
+      const canBeat = meta.mainRank > lastMainRank;
+      return {
+        canBeat,
+        reason: canBeat ? `你的${meta.type}主点更大，可以压过上家。` : `你的${meta.type}主点不够大，压不过上家。`
+      };
+    }
+
     function buildHintPayload() {
       const selected = Array.from(selectedIndices).sort((a, b) => a - b);
       const selectedCards = selected.map(i => gameState?.hand?.[i]).filter(Boolean);
+      const beatCheck = canSelectedBeatLast(selected);
       return {
         selectedIndices: selected,
         selectedCards,
         selectedHint: selected.length ? estimatePlayHint(selected) : "尚未选牌",
+        selectedMeta: selectedMeta(selected),
+        beatCheck,
         state: summarizeCurrentState(gameState),
         context: {
           role: playerRole(0, gameState),
           currentTypeToBeat: playTypeName(gameState?.lastPlayType),
           currentTypeToBeatRaw: gameState?.lastPlayType,
-          isMyTurn: !!(gameState && gameState.landlordRobbed && !gameState.gameOver && gameState.currentPlayer === 0)
+          isMyTurn: !!(gameState && gameState.landlordRobbed && !gameState.gameOver && gameState.currentPlayer === 0),
+          lastPlayedCards: splitCards(gameState?.lastPlayedText || ""),
+          opponentPressure: {
+            nextPlayerCardCount: gameState?.ai1CardCount,
+            anotherPlayerCardCount: gameState?.ai2CardCount,
+            anyOpponentLowCards: Math.min(gameState?.ai1CardCount ?? 99, gameState?.ai2CardCount ?? 99) <= 2
+          }
         }
       };
     }
@@ -4523,7 +4794,9 @@
         "你是斗地主出牌建议助手。",
         "请基于用户当前局面输出 JSON。",
         "只输出 JSON，不要额外解释。",
-        "字段必须包含：recommended_play、why_recommended、avoid_bomb_reason、style。"
+        "你必须先检查用户当前所选牌能不能压过上家，不能压过时要明确指出不能出这手。",
+        "如果当前选择压不过上家，不要假装它可行，必须改为推荐可行方案或建议过牌。",
+        "字段必须包含：recommended_play、why_recommended、avoid_bomb_reason、style、selected_is_playable、selected_problem。"
       ].join("");
       const userPrompt = [
         "请结合当前局势和用户已选牌，回答：",
@@ -4531,6 +4804,8 @@
         "2. 为什么不建议现在出炸弹；",
         "3. 当前局势更偏保守还是进攻。",
         "如果用户没选牌，请先给出推荐动作。",
+        "如果用户已选牌但它压不过上家，请明确指出压不过，并说明是牌型不对、长度不对还是点数不够。",
+        "判断时优先参考 payload 里的 beatCheck 和 selectedMeta，不要忽略硬规则。",
         "",
         JSON.stringify(payload, null, 2)
       ].join("\n");
@@ -4571,19 +4846,36 @@
 
     function renderHintResult(result) {
       const recommended = result.recommended_play || result.recommendedPlay || "未给出具体牌型";
+      const selectedPlayable = typeof result.selected_is_playable === "boolean"
+        ? (result.selected_is_playable ? "当前所选可出" : "当前所选不可出")
+        : "未判断当前所选";
+      lastAiMode = "hint";
+      lastAiSummary = JSON.stringify(result, null, 2);
+      aiConversation = [{
+        role: "assistant",
+        content: `推荐动作：${recommended}\n当前所选：${selectedPlayable}${result.selected_problem ? `；${result.selected_problem}` : ""}\n原因：${result.why_recommended || "未给出"}`
+      }];
       showAiPanel(
         "AI 提示",
         `${aiConfig.aiName || "AI"} 给你的当前回合建议`,
         [
+          { title: "当前所选是否可出", content: `${selectedPlayable}${result.selected_problem ? `：${result.selected_problem}` : ""}` },
           { title: "推荐动作", content: recommended },
           { title: "为什么推荐这手牌", content: result.why_recommended || "AI 没有给出解释。" },
           { title: "为什么不建议出炸弹", content: result.avoid_bomb_reason || "当前没有额外的炸弹风险说明。" },
           { title: "当前局势是保守还是进攻", content: result.style || "未判断" }
         ]
       );
+      renderAiConversation();
     }
 
     function renderReviewResult(result) {
+      lastAiMode = "review";
+      lastAiSummary = JSON.stringify(result, null, 2);
+      aiConversation = [{
+        role: "assistant",
+        content: `关键转折点：${normalizeToList(result["关键转折点"] || result.key_turning_points || result.turning_points).join("；") || "无"}\n胜负原因总结：${result["胜负原因总结"] || result.win_reason_summary || "无"}`
+      }];
       showAiPanel(
         "AI 分析",
         `${aiConfig.aiName || "AI"} 给出的赛后复盘`,
@@ -4594,6 +4886,47 @@
           { title: "胜负原因总结", content: result["胜负原因总结"] || result.win_reason_summary || "AI 没有给出总结。" }
         ]
       );
+      renderAiConversation();
+    }
+
+    async function askAiFollowUp() {
+      const question = (aiChatInput?.value || "").trim();
+      if (!question) {
+        notify("先输入你想追问的问题。", "warn", true, 1600);
+        return;
+      }
+
+      const statePayload = lastAiMode === "review" ? buildReviewPayload() : buildHintPayload();
+      const systemPrompt = [
+        "你是斗地主 AI 助手的追问对话模式。",
+        "你必须只围绕当前牌局、上一轮分析结果和用户问题回答。",
+        "如果上一轮分析有问题，应直接纠正，不要强行圆回来。",
+        "回答要具体，优先说明为什么、压不压得过、还有哪些备选。"
+      ].join("");
+
+      const historyMessages = aiConversation.slice(-6).map(item => ({
+        role: item.role === "assistant" ? "assistant" : "user",
+        content: item.content
+      }));
+
+      const userPrompt = [
+        `当前模式：${lastAiMode === "review" ? "赛后复盘追问" : "局中提示追问"}`,
+        "上一轮 AI 输出：",
+        lastAiSummary || "无",
+        "",
+        "当前牌局 / 回放上下文：",
+        JSON.stringify(statePayload, null, 2),
+        "",
+        `用户追问：${question}`
+      ].join("\n");
+
+      aiConversation.push({ role: "user", content: question });
+      renderAiConversation();
+      aiChatInput.value = "";
+
+      const answer = await requestAiText(systemPrompt, userPrompt, historyMessages);
+      aiConversation.push({ role: "assistant", content: answer });
+      renderAiConversation();
     }
 
     async function onAiAction() {
@@ -5086,6 +5419,18 @@
       document.getElementById("btnStart").onclick = () => startGame();
       document.getElementById("btnPlay").onclick = () => playSelected();
       document.getElementById("btnAiAction").onclick = () => onAiAction();
+      document.getElementById("btnAiChatSend").onclick = async () => {
+        try {
+          aiBusy = true;
+          updateAiActionButton();
+          await askAiFollowUp();
+        } catch (err) {
+          notify(`AI 追问失败：${err.message}`, "error", true, 3200);
+        } finally {
+          aiBusy = false;
+          updateAiActionButton();
+        }
+      };
       document.getElementById("btnPass").onclick = () => passTurn();
       document.getElementById("btnConfig").onclick = () => openConfigModal();
       document.getElementById("btnConfigClose").onclick = () => closeConfigModal();
@@ -5115,6 +5460,15 @@
       configModal.onclick = (e) => {
         if (e.target === configModal) closeConfigModal();
       };
+
+      if (aiChatInput) {
+        aiChatInput.addEventListener("keydown", async (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById("btnAiChatSend").click();
+          }
+        });
+      }
     }
 
     async function loadModule() {
