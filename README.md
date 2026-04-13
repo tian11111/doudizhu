@@ -1,6 +1,6 @@
 # 斗地主 - 网页版 + WebAssembly 内核 + AI 辅助 🃏
 
-一个可直接在浏览器运行的完整斗地主游戏，前端采用原生 HTML/CSS/JavaScript 开发，**核心游戏规则与本地 AI 逻辑由 C 语言实现并编译为 WebAssembly**，同时深度集成大模型能力，提供出牌提示、对局复盘、AI 决策等增强功能。
+一个可直接在浏览器运行的完整斗地主游戏，前端采用原生 HTML/CSS/JavaScript 开发，**核心游戏规则与本地 AI 逻辑由 C 语言实现并编译为 WebAssembly**，同时深度集成大模型能力，提供出牌提示、对局复盘、AI 决策等增强功能。试玩网址:https://tian11111.github.io/doudizhu/%E6%96%97%E5%9C%B0%E4%B8%BB/
 
 ---
 <p align="center">
