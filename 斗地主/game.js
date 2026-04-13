@@ -1486,7 +1486,10 @@ function checkIncomingModuleAPI() {
 }
 
 // Imports from the Wasm binary.
+var _set_ai_difficulty = Module['_set_ai_difficulty'] = makeInvalidEarlyAccess('_set_ai_difficulty');
+var _game_play_by_player = Module['_game_play_by_player'] = makeInvalidEarlyAccess('_game_play_by_player');
 var _game_play = Module['_game_play'] = makeInvalidEarlyAccess('_game_play');
+var _game_pass_by_player = Module['_game_pass_by_player'] = makeInvalidEarlyAccess('_game_pass_by_player');
 var _game_pass = Module['_game_pass'] = makeInvalidEarlyAccess('_game_pass');
 var _game_get_state_json = Module['_game_get_state_json'] = makeInvalidEarlyAccess('_game_get_state_json');
 var _rob_landlord = Module['_rob_landlord'] = makeInvalidEarlyAccess('_rob_landlord');
@@ -1511,7 +1514,10 @@ var __indirect_function_table = makeInvalidEarlyAccess('__indirect_function_tabl
 var wasmMemory = makeInvalidEarlyAccess('wasmMemory');
 
 function assignWasmExports(wasmExports) {
+  assert(typeof wasmExports['set_ai_difficulty'] != 'undefined', 'missing Wasm export: set_ai_difficulty');
+  assert(typeof wasmExports['game_play_by_player'] != 'undefined', 'missing Wasm export: game_play_by_player');
   assert(typeof wasmExports['game_play'] != 'undefined', 'missing Wasm export: game_play');
+  assert(typeof wasmExports['game_pass_by_player'] != 'undefined', 'missing Wasm export: game_pass_by_player');
   assert(typeof wasmExports['game_pass'] != 'undefined', 'missing Wasm export: game_pass');
   assert(typeof wasmExports['game_get_state_json'] != 'undefined', 'missing Wasm export: game_get_state_json');
   assert(typeof wasmExports['rob_landlord'] != 'undefined', 'missing Wasm export: rob_landlord');
@@ -1533,7 +1539,10 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['emscripten_stack_get_current'] != 'undefined', 'missing Wasm export: emscripten_stack_get_current');
   assert(typeof wasmExports['memory'] != 'undefined', 'missing Wasm export: memory');
   assert(typeof wasmExports['__indirect_function_table'] != 'undefined', 'missing Wasm export: __indirect_function_table');
+  _set_ai_difficulty = Module['_set_ai_difficulty'] = createExportWrapper('set_ai_difficulty', 1);
+  _game_play_by_player = Module['_game_play_by_player'] = createExportWrapper('game_play_by_player', 3);
   _game_play = Module['_game_play'] = createExportWrapper('game_play', 2);
+  _game_pass_by_player = Module['_game_pass_by_player'] = createExportWrapper('game_pass_by_player', 1);
   _game_pass = Module['_game_pass'] = createExportWrapper('game_pass', 0);
   _game_get_state_json = Module['_game_get_state_json'] = createExportWrapper('game_get_state_json', 0);
   _rob_landlord = Module['_rob_landlord'] = createExportWrapper('rob_landlord', 1);

@@ -173,6 +173,56 @@
       color: #eefcf5;
     }
 
+    .difficulty-bar {
+      width: calc(100% - 16px);
+      margin: 10px auto 0;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .difficulty-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #eefcf5;
+    }
+
+    .difficulty-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .difficulty-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .difficulty-btn {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.08);
+      color: #eefcf5;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    }
+
+    .difficulty-btn.active {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+      color: #fff8e1;
+      border-color: rgba(245,158,11,0.55);
+    }
+
     .bottom-cards {
       display: flex;
       gap: 6px;
@@ -858,6 +908,7 @@
       .top-status,
       .scoreboard,
       .phase-bar,
+      .difficulty-bar,
       .board,
       .rob-panel,
       .hand-wrap,
@@ -1059,6 +1110,7 @@
       .top-status,
       .scoreboard,
       .phase-bar,
+      .difficulty-bar,
       .board,
       .rob-panel,
       .hand-wrap,
@@ -1091,6 +1143,7 @@
       .score-name,
       .score-tag,
       .phase-text,
+      .difficulty-label,
       .top-status,
       .player-count,
       .play-type,
@@ -1105,6 +1158,21 @@
       .phase-bar {
         padding: 8px 10px;
         border-radius: 12px;
+      }
+
+      .difficulty-bar {
+        padding: 8px 10px;
+        border-radius: 12px;
+      }
+
+      .difficulty-actions {
+        width: 100%;
+      }
+
+      .difficulty-btn {
+        flex: 1 1 0;
+        text-align: center;
+        padding: 9px 8px;
       }
 
       .bottom-cards {
@@ -3486,6 +3554,24 @@
         <div class="bottom-cards" id="bottomCards"></div>
       </div>
 
+      <div class="difficulty-bar">
+        <div class="difficulty-group">
+          <div class="difficulty-label" id="difficultyText">AI 难度：普通</div>
+          <div class="difficulty-actions">
+            <button class="difficulty-btn" id="btnDiffEasy" type="button">简单</button>
+            <button class="difficulty-btn active" id="btnDiffNormal" type="button">普通</button>
+            <button class="difficulty-btn" id="btnDiffHard" type="button">困难</button>
+          </div>
+        </div>
+        <div class="difficulty-group">
+          <div class="difficulty-label" id="aiPlayModeText">电脑出牌：本地AI</div>
+          <div class="difficulty-actions">
+            <button class="difficulty-btn active" id="btnAiPlayLocal" type="button">本地AI</button>
+            <button class="difficulty-btn" id="btnAiPlayModel" type="button">人机AI</button>
+          </div>
+        </div>
+      </div>
+
       <div class="board">
         <div class="ai-row">
           <div class="player-mini" id="playerMini1">
@@ -3728,6 +3814,8 @@
     let lastAiMode = "hint";
 
     const AI_CONFIG_KEY = "doudizhu_ai_config_v1";
+    const AI_DIFFICULTY_KEY = "doudizhu_ai_difficulty_v1";
+    const AI_PLAY_MODE_KEY = "doudizhu_ai_play_mode_v1";
     const AI_PROVIDER_PRESETS = {
       custom: {
         label: "自定义",
@@ -3797,6 +3885,9 @@
       autoReview: false
     };
     let aiConfig = { ...defaultAiConfig };
+    let aiDifficultyLevel = 1;
+    let aiPlayMode = "local";
+    let modelPlayApiUnavailableLogged = false;
 
     let bgmEnabled = true;
     let sfxEnabled = true;
@@ -3819,6 +3910,15 @@
     const toastWrap = document.getElementById("toastWrap");
     const btnStart = document.getElementById("btnStart");
     const btnAiAction = document.getElementById("btnAiAction");
+    const difficultyButtons = {
+      0: document.getElementById("btnDiffEasy"),
+      1: document.getElementById("btnDiffNormal"),
+      2: document.getElementById("btnDiffHard")
+    };
+    const aiPlayModeButtons = {
+      local: document.getElementById("btnAiPlayLocal"),
+      model: document.getElementById("btnAiPlayModel")
+    };
 
     const bgmAudio = document.getElementById("bgmAudio");
     const loseAudio = document.getElementById("loseAudio");
@@ -3842,6 +3942,104 @@
     [dealAudio, bombAudio, playCardAudio, passAudio, biggerAudio, jokerBombAudio, planeAudio]
       .filter(Boolean)
       .forEach(a => { a.volume = 0.92; });
+
+    function difficultyName(level) {
+      if (Number(level) === 0) return "简单";
+      if (Number(level) === 2) return "困难";
+      return "普通";
+    }
+
+    function readAiDifficulty() {
+      try {
+        const raw = localStorage.getItem(AI_DIFFICULTY_KEY);
+        const parsed = Number(raw);
+        return [0, 1, 2].includes(parsed) ? parsed : 1;
+      } catch (_) {
+        return 1;
+      }
+    }
+
+    function saveAiDifficulty() {
+      localStorage.setItem(AI_DIFFICULTY_KEY, String(aiDifficultyLevel));
+    }
+
+    function readAiPlayMode() {
+      try {
+        const raw = String(localStorage.getItem(AI_PLAY_MODE_KEY) || "").trim();
+        return raw === "model" ? "model" : "local";
+      } catch (_) {
+        return "local";
+      }
+    }
+
+    function saveAiPlayMode() {
+      localStorage.setItem(AI_PLAY_MODE_KEY, aiPlayMode);
+    }
+
+    function renderDifficulty(state = gameState) {
+      const currentLevel = Number.isFinite(state?.aiDifficulty) ? Number(state.aiDifficulty) : aiDifficultyLevel;
+      const difficultyText = document.getElementById("difficultyText");
+      if (difficultyText) {
+        difficultyText.textContent = `AI 难度：${difficultyName(currentLevel)}`;
+      }
+      Object.entries(difficultyButtons).forEach(([level, button]) => {
+        if (!button) return;
+        button.classList.toggle("active", Number(level) === currentLevel);
+      });
+      const aiPlayModeText = document.getElementById("aiPlayModeText");
+      if (aiPlayModeText) {
+        aiPlayModeText.textContent = `电脑出牌：${aiPlayMode === "model" ? "人机AI" : "本地AI"}`;
+      }
+      Object.entries(aiPlayModeButtons).forEach(([mode, button]) => {
+        if (!button) return;
+        button.classList.toggle("active", mode === aiPlayMode);
+      });
+    }
+
+    function syncDifficultyToWasm() {
+      if (!wasmModule || typeof wasmModule._set_ai_difficulty !== "function") {
+        return false;
+      }
+      wasmModule._set_ai_difficulty(aiDifficultyLevel);
+      return true;
+    }
+
+    function setDifficulty(level, showToast = true) {
+      const nextLevel = Number(level);
+      if (![0, 1, 2].includes(nextLevel)) return;
+      aiDifficultyLevel = nextLevel;
+      saveAiDifficulty();
+      const synced = syncDifficultyToWasm();
+      if (gameState) {
+        gameState.aiDifficulty = nextLevel;
+      }
+      renderDifficulty();
+      if (showToast) {
+        notify(
+          synced ? `AI 难度已切到${difficultyName(nextLevel)}。` : `难度已保存为${difficultyName(nextLevel)}，模块加载后会自动同步。`,
+          "info",
+          true,
+          1800
+        );
+      }
+    }
+
+    function setAiPlayMode(mode, showToast = true) {
+      const nextMode = mode === "model" ? "model" : "local";
+      aiPlayMode = nextMode;
+      saveAiPlayMode();
+      renderDifficulty();
+      if (showToast) {
+        notify(
+          nextMode === "model"
+            ? "电脑出牌已切到人机AI，抢地主仍走本地逻辑。"
+            : "电脑出牌已切回本地AI。",
+          "info",
+          true,
+          2000
+        );
+      }
+    }
 
     function readAiConfig() {
       try {
@@ -4491,6 +4689,7 @@
     }
 
     function renderStatus(state) {
+      renderDifficulty(state);
       document.getElementById("myCount").textContent = `剩余 ${state.myCardCount} 张`;
       document.getElementById("ai1Count").textContent = `剩余 ${state.ai1CardCount} 张`;
       document.getElementById("ai2Count").textContent = `剩余 ${state.ai2CardCount} 张`;
@@ -4783,6 +4982,202 @@
         winner: gameState?.myCardCount === 0 ? "你" : (gameState?.ai1CardCount === 0 ? "电脑1" : (gameState?.ai2CardCount === 0 ? "电脑2" : "未知")),
         replayEvents
       };
+    }
+
+    function getHandByPlayerIndex(state, playerIndex) {
+      if (!state) return [];
+      if (playerIndex === 0) return state.hand || [];
+      if (playerIndex === 1) return state.ai1Hand || [];
+      if (playerIndex === 2) return state.ai2Hand || [];
+      return [];
+    }
+
+    function buildAiPlayPayload() {
+      const current = gameState?.currentPlayer;
+      const next = ((current ?? 0) + 1) % 3;
+      const lastPlayedCards = splitCards(gameState?.lastPlayedText || "");
+      return {
+        currentActorIndex: gameState?.currentPlayer,
+        currentActorName: playerName(gameState?.currentPlayer),
+        currentActorRole: playerRole(gameState?.currentPlayer, gameState),
+        planningGoal: "从当前电脑回合开始，连续规划到轮到玩家为止；如果中间还会轮到另一名电脑，则一次给出两步。",
+        state: summarizeCurrentState(gameState),
+        context: {
+          landlordIndex: gameState?.landlordIndex,
+          currentPlayer: gameState?.currentPlayer,
+          lastPlayer: gameState?.lastPlayer,
+          lastPlayType: gameState?.lastPlayType,
+          lastPlayTypeName: playTypeName(gameState?.lastPlayType),
+          lastPlayedCards,
+          lastPlayedSummary: gameState?.lastPlayType
+            ? `${playTypeName(gameState?.lastPlayType)} ${lastPlayedCards.join(" ")}`
+            : "当前是新一轮先手，没有要压的牌",
+          canPass: !!(gameState && gameState.lastPlayType !== 0),
+          nextPlayerWillBe: playerName(((gameState?.currentPlayer ?? 0) + 1) % 3),
+          chainEndsWhenPlayerActs: true,
+          expectedActorsBeforePlayer: [current, next].filter(v => v === 1 || v === 2),
+          hardRules: [
+            "这是斗地主，不是比花色；只比较牌型、张数和点数。",
+            "跟牌时，必须与上家牌型一致；除非你出炸弹或王炸。",
+            "单张压单张时，新牌点数必须严格大于上家；相同点数不能压。",
+            "对子压对子、三张压三张、顺子压顺子时，也必须同型且主点严格更大。",
+            "压不过就只能 pass，不能编造一手看起来接近的牌。"
+          ],
+          visibleHands: {
+            player: gameState?.hand || [],
+            ai1: gameState?.ai1Hand || [],
+            ai2: gameState?.ai2Hand || []
+          },
+          aiActors: [
+            {
+              actor: 1,
+              name: "电脑1",
+              role: playerRole(1, gameState),
+              hand: gameState?.ai1Hand || [],
+              cardCount: gameState?.ai1CardCount ?? 0,
+              isCurrentTurn: current === 1
+            },
+            {
+              actor: 2,
+              name: "电脑2",
+              role: playerRole(2, gameState),
+              hand: gameState?.ai2Hand || [],
+              cardCount: gameState?.ai2CardCount ?? 0,
+              isCurrentTurn: current === 2
+            }
+          ]
+        }
+      };
+    }
+
+    async function requestAiPlayDecision() {
+      const payload = buildAiPlayPayload();
+      const systemPrompt = [
+        "你是斗地主双电脑联合出牌代理。",
+        "你必须只输出 JSON，不要输出 markdown，不要解释额外文字。",
+        "你必须严格遵守斗地主规则。",
+        "你会看到整桌明牌信息，尤其是 ai1 和 ai2 两个电脑的完整手牌。",
+        "请直接规划从当前电脑回合开始、直到轮到玩家之前的连续动作，优先一次返回完整链路，最多两步。",
+        "每一步都必须是合法动作：play 或 pass。",
+        "如果输出 play，cards 必须严格取自对应 actor 的手牌，不能杜撰。",
+        "跟牌时不能按花色比较，也不能出相同点数去压上家；点数必须严格更大。",
+        "如果上家出了单张3，你不能再出任何3去压；只能出更大的单张，或者 pass，或者炸弹/王炸。",
+        "如果上家出了单张5，你不能再出任何5去压；只能出6及以上的单张，或者 pass，或者炸弹/王炸。",
+        "如果当前是新一轮先手，第一步不能输出 pass。",
+        "如果当前电脑出牌后，在轮到玩家前还会轮到另一名电脑，则应继续规划第二步，而不是只给一步。",
+        "农民阵营时要考虑两个电脑之间的配合，不要无意义地压队友。",
+        "字段必须包含：steps。每个 step 必须包含 actor、action、cards、reason。"
+      ].join("");
+      const userPrompt = [
+        "请为两个电脑规划接下来直到轮到玩家前的连续动作。",
+        "要求：",
+        "1. 返回 JSON 结构：{\"steps\":[...]}。",
+        "2. 每个 step 的 actor 只能是 1 或 2，表示电脑1/电脑2。",
+        "3. action 只能是 play 或 pass。",
+        "4. cards 必须是要出的完整牌组；如果 action=pass，cards 返回空数组。",
+        "5. 如果压不过上家，就输出 pass；但当前不能 pass 的那一步必须给出一手可出的牌。",
+        "6. 如果当前 actor 之后紧接着就是玩家，则 steps 只返回一步；如果还会轮到另一个电脑，必须直接返回两步。",
+        "7. 你已经拿到了 ai1 和 ai2 的完整手牌，请把两个电脑当作联合规划，不要只看当前 actor。",
+        "8. 这是斗地主规则：不能用同点数单张去压单张，不能用同点数对子去压对子，不能按花色大小判断。",
+        "",
+        JSON.stringify(payload, null, 2)
+      ].join("\n");
+      return requestAiJSON(systemPrompt, userPrompt);
+    }
+
+    function cardsToIndices(hand, cards) {
+      if (!Array.isArray(hand) || !Array.isArray(cards)) return [];
+      const used = new Array(hand.length).fill(false);
+      const indices = [];
+      for (const card of cards) {
+        let matched = -1;
+        for (let i = 0; i < hand.length; i++) {
+          if (!used[i] && hand[i] === card) {
+            matched = i;
+            break;
+          }
+        }
+        if (matched === -1) {
+          return null;
+        }
+        used[matched] = true;
+        indices.push(matched);
+      }
+      return indices.sort((a, b) => a - b);
+    }
+
+    async function applyModelAiDecision(step) {
+      const playerIndex = Number(step?.actor);
+      if (![1, 2].includes(playerIndex)) {
+        throw new Error(`人机AI返回了非法 actor：${step?.actor}`);
+      }
+      if (!gameState || gameState.currentPlayer !== playerIndex) {
+        throw new Error(`人机AI计划中的 actor=${playerIndex} 与当前轮到的玩家不一致。`);
+      }
+      if (typeof wasmModule._game_play_by_player !== "function" || typeof wasmModule._game_pass_by_player !== "function") {
+        if (!modelPlayApiUnavailableLogged) {
+          appendLog("人机AI模式未生效：当前 game.wasm 还没导出按玩家出牌/过牌接口，已回退本地AI。");
+          modelPlayApiUnavailableLogged = true;
+        }
+        return false;
+      }
+      const action = String(step?.action || "").trim().toLowerCase();
+      const hand = getHandByPlayerIndex(gameState, playerIndex);
+
+      if (action === "pass") {
+        const result = wasmModule._game_pass_by_player(playerIndex);
+        if (!result) {
+          throw new Error(`${playerName(playerIndex)} 的人机AI选择了过牌，但当前不能过。`);
+        }
+        appendLog(`${playerName(playerIndex)}（人机AI）选择过牌。${step?.reason ? ` 原因：${step.reason}` : ""}`);
+        return true;
+      }
+
+      const cards = Array.isArray(step?.cards) ? step.cards.map(v => String(v)) : [];
+      if (!cards.length) {
+        throw new Error(`${playerName(playerIndex)} 的人机AI没有返回有效牌组。`);
+      }
+
+      const selected = cardsToIndices(hand, cards);
+      if (!selected || !selected.length) {
+        throw new Error(`${playerName(playerIndex)} 的人机AI返回了手里不存在的牌：${cards.join(" ")}`);
+      }
+
+      const ptr = mallocIntArray(selected);
+      const result = wasmModule._game_play_by_player(playerIndex, ptr, selected.length);
+      wasmModule._free(ptr);
+      if (!result) {
+        throw new Error(`${playerName(playerIndex)} 的人机AI返回了不合法出牌：${cards.join(" ")}`);
+      }
+
+      appendLog(`${playerName(playerIndex)}（人机AI）出了：${cards.join(" ")}${step?.reason ? `。原因：${step.reason}` : ""}`);
+      return true;
+    }
+
+    async function tryModelAiTurn(playerIndex) {
+      if (aiPlayMode !== "model") return false;
+      if (!gameState || gameState.currentPlayer !== playerIndex || playerIndex === 0) return false;
+
+      const plan = await requestAiPlayDecision();
+      const steps = Array.isArray(plan?.steps) ? plan.steps : [];
+      if (!steps.length) {
+        throw new Error("人机AI没有返回 steps。");
+      }
+
+      let progressed = false;
+      for (const step of steps.slice(0, 2)) {
+        if (!gameState || gameState.currentPlayer === 0 || gameState.gameOver) break;
+        const applied = await applyModelAiDecision(step);
+        if (!applied) break;
+        progressed = true;
+        updateState();
+        renderStatus(gameState);
+        renderHand(gameState);
+        if (gameState.currentPlayer === 0 || gameState.gameOver) {
+          break;
+        }
+      }
+      return progressed;
     }
 
     async function requestAiHint() {
@@ -5108,6 +5503,10 @@
         return `${playerName(after.landlordIndex)} 抢到了地主。`;
       }
 
+      if (after.lastPlayedText === "过牌" || after.lastPlayType === 0) {
+        return `${actor} 过牌。`;
+      }
+
       if (after.lastPlayer === before.currentPlayer) {
         return `${actor} 出了：${after.lastPlayedText || "未知牌面"}（${playTypeName(after.lastPlayType)}）`;
       }
@@ -5186,30 +5585,40 @@
       let guard = 0;
       while (!gameState.gameOver && gameState.landlordRobbed && gameState.currentPlayer !== 0 && guard < 50) {
         const before = JSON.parse(JSON.stringify(gameState));
-
-        wasmModule._game_ai_step();
+        let usedModelMove = false;
+        try {
+          usedModelMove = await tryModelAiTurn(before.currentPlayer);
+          if (!usedModelMove) {
+            wasmModule._game_ai_step();
+          }
+        } catch (err) {
+          appendLog(`人机AI出牌失败，已回退本地AI：${err.message}`);
+          wasmModule._game_ai_step();
+        }
         updateState();
         renderStatus(gameState);
         renderHand(gameState);
-        recordReplayEvent({
-          actor: playerName(before.currentPlayer),
-          action: gameState.lastPlayer === before.currentPlayer ? "play" : "pass",
-          cards: gameState.lastPlayer === before.currentPlayer ? gameState.lastPlayedText : "过牌",
-          playType: gameState.lastPlayer === before.currentPlayer ? playTypeName(gameState.lastPlayType) : "过牌",
-          before: summarizeCurrentState(before),
-          after: summarizeCurrentState(gameState)
-        });
+        if (!usedModelMove) {
+          recordReplayEvent({
+            actor: playerName(before.currentPlayer),
+            action: gameState.lastPlayer === before.currentPlayer ? "play" : "pass",
+            cards: gameState.lastPlayer === before.currentPlayer ? gameState.lastPlayedText : "过牌",
+            playType: gameState.lastPlayer === before.currentPlayer ? playTypeName(gameState.lastPlayType) : "过牌",
+            before: summarizeCurrentState(before),
+            after: summarizeCurrentState(gameState)
+          });
 
-        const msg = describeAIAction(before, gameState);
-        if (msg) appendLog(msg);
+          const msg = describeAIAction(before, gameState);
+          if (msg) appendLog(msg);
 
-        if (before.currentPlayer === 1 || before.currentPlayer === 2) {
-          if (gameState.lastPlayer === before.currentPlayer) {
-            playSfx(choosePlayAudio(before, gameState, before.currentPlayer));
-            renderPlayedArea(before.currentPlayer, gameState.lastPlayedText);
-          } else {
-            playSfx(passAudio);
-            renderPlayedArea(before.currentPlayer, "过牌");
+          if (before.currentPlayer === 1 || before.currentPlayer === 2) {
+            if (gameState.lastPlayer === before.currentPlayer) {
+              playSfx(choosePlayAudio(before, gameState, before.currentPlayer));
+              renderPlayedArea(before.currentPlayer, gameState.lastPlayedText);
+            } else {
+              playSfx(passAudio);
+              renderPlayedArea(before.currentPlayer, "过牌");
+            }
           }
         }
 
@@ -5233,6 +5642,7 @@
       playSfx(dealAudio);
 
       wasmModule._game_init();
+      syncDifficultyToWasm();
       selectedIndices.clear();
       prevState = null;
       replayEvents = [];
@@ -5450,6 +5860,11 @@
 
       document.getElementById("btnRob").onclick = () => robLandlord();
       document.getElementById("btnNoRob").onclick = () => noRobLandlord();
+      if (difficultyButtons[0]) difficultyButtons[0].onclick = () => setDifficulty(0);
+      if (difficultyButtons[1]) difficultyButtons[1].onclick = () => setDifficulty(1);
+      if (difficultyButtons[2]) difficultyButtons[2].onclick = () => setDifficulty(2);
+      if (aiPlayModeButtons.local) aiPlayModeButtons.local.onclick = () => setAiPlayMode("local");
+      if (aiPlayModeButtons.model) aiPlayModeButtons.model.onclick = () => setAiPlayMode("model");
 
       logToggle.onclick = () => {
         document.body.classList.toggle("show-log");
@@ -5473,6 +5888,8 @@
 
     async function loadModule() {
       aiConfig = readAiConfig();
+      aiDifficultyLevel = readAiDifficulty();
+      aiPlayMode = readAiPlayMode();
       if (!AI_PROVIDER_PRESETS[aiConfig.providerPreset]) {
         aiConfig.providerPreset = "custom";
       }
@@ -5488,6 +5905,8 @@
       }
 
       bindButtons();
+      syncDifficultyToWasm();
+      renderDifficulty();
       setLogToggleText();
       updateAudioButtons();
       refreshStartButton();

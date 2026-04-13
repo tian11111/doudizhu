@@ -26,6 +26,7 @@ int landlordIndex = -1;
 char buffer[4096];
 bool landlordRobbed = false;    // 抢地主是否完成
 Card landlordCards[3];          // 地主底牌
+Difficulty ai_difficulty = DIFF_NORMAL; // 默认普通难度
 
 // 函数声明
 void clearLastPlayedText();
@@ -53,6 +54,16 @@ int get_best_play(int playerIdx);       // 智能出牌逻辑（核心）
 bool check_team_win();                  // 检查队伍是否获胜
 void update_player_team();              // 更新玩家队伍归属
 
+// 设置 AI 难度
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
+void set_ai_difficulty(int level) {
+    if (level >= DIFF_EASY && level <= DIFF_HARD) {
+        ai_difficulty = (Difficulty)level;
+    }
+}
+
 // 重置所有游戏状态
 void reset_all(bool keepScore) {
     // 清空三个玩家的所有数据
@@ -66,7 +77,7 @@ void reset_all(bool keepScore) {
         memset(players[i].hand, 0, sizeof(players[i].hand));
         memset(players[i].name, 0, sizeof(players[i].name));
     }
-    // 清空牌堆和全局状态
+    // 清空牌堆 and 全局状态
     memset(&gameDeck, 0, sizeof(Deck));
     memset(&lastPlay, 0, sizeof(Play));
     lastPlayer = -1;
@@ -151,6 +162,34 @@ void sortHandByPoint(Player* player) {
 // 清空出牌文本
 void clearLastPlayedText() {
     lastPlayedText[0] = '\0';
+}
+
+static int normalize_selected_indices(const Player* player, int selected[], int count) {
+    if (!player || count < 0 || count > player->cardCount) return 0;
+
+    for (int i = 0; i < count; i++) {
+        if (selected[i] < 0 || selected[i] >= player->cardCount) {
+            return 0;
+        }
+    }
+
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = 0; j < count - i - 1; j++) {
+            if (selected[j] > selected[j + 1]) {
+                int temp = selected[j];
+                selected[j] = selected[j + 1];
+                selected[j + 1] = temp;
+            }
+        }
+    }
+
+    for (int i = 1; i < count; i++) {
+        if (selected[i] == selected[i - 1]) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 // 构建出牌文本描述
@@ -518,21 +557,30 @@ int check_play_valid(int selected[], int count) {
     return 1;
 }
 
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 int game_play_by_player(int playerIdx, int selected[], int count) {
     if (!landlordRobbed) return 0;
     if (gameOver) return 0;
     if (playerIdx != currentPlayer) return 0;
 
     Player* player = &players[playerIdx];
-    Play currentPlay = analyzePlay(player, selected, count);
+    int normalized[20] = { 0 };
+    for (int i = 0; i < count && i < 20; i++) {
+        normalized[i] = selected[i];
+    }
+    if (!normalize_selected_indices(player, normalized, count)) return 0;
+
+    Play currentPlay = analyzePlay(player, normalized, count);
 
     if (currentPlay.type == PASS) return 0;
     if (!canPlayBeat(&currentPlay, &lastPlay)) return 0;
 
-    buildPlayedTextFromSelection(player, selected, count);
+    buildPlayedTextFromSelection(player, normalized, count);
 
     for (int k = count - 1; k >= 0; k--) {
-        int idx = selected[k];
+        int idx = normalized[k];
         if (idx < 0 || idx >= player->cardCount) return 0;
 
         for (int j = idx; j < player->cardCount - 1; j++) {
@@ -581,36 +629,17 @@ int game_play_by_player(int playerIdx, int selected[], int count) {
 }
 
 // 玩家出牌
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 int game_play(int selected[], int count) {
     return game_play_by_player(0, selected, count);
 }
 
 // 过牌
-#if 0
-int game_pass_by_player(int playerIdx) {
-    if (!landlordRobbed) return 0;
-    if (gameOver) return 0;
-    if (playerIdx != currentPlayer) return 0;
-
-    if (lastPlay.type == PASS) return 0;
-
-    strcpy(lastPlayedText, "杩囩墝");
-
-    passCount++;
-    lastPlayer = playerIdx;
-    currentPlayer = (playerIdx + 1) % 3;
-
-    if (passCount >= 2) {
-        lastPlay.type = PASS;
-        lastPlayer = -1;
-        passCount = 0;
-    }
-
-    gameRound++;
-    return 1;
-}
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
 #endif
-
 int game_pass_by_player(int playerIdx) {
     if (!landlordRobbed) return 0;
     if (gameOver) return 0;
@@ -635,11 +664,17 @@ int game_pass_by_player(int playerIdx) {
     return 1;
 }
 
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 int game_pass() {
     return game_pass_by_player(0);
 }
 
 // 获取游戏状态JSON
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 const char* game_get_state_json() {
     int offset = 0;
 
@@ -665,7 +700,7 @@ const char* game_get_state_json() {
     }
     offset += sprintf(buffer + offset, "],");
 
-    // AI1 手牌（结算或调试可用）
+    // AI1 手牌（结算 or 调试可用）
     offset += sprintf(buffer + offset, "\"ai1Hand\":[");
     for (int i = 0; i < players[1].cardCount; i++) {
         if (i > 0) offset += sprintf(buffer + offset, ",");
@@ -697,6 +732,9 @@ const char* game_get_state_json() {
     offset += sprintf(buffer + offset, "\"ai1Score\":%d,", players[1].score);
     offset += sprintf(buffer + offset, "\"ai2Score\":%d,", players[2].score);
 
+    // AI 难度
+    offset += sprintf(buffer + offset, "\"aiDifficulty\":%d,", ai_difficulty);
+
     // 上一手牌信息
     offset += sprintf(buffer + offset, "\"lastPlayType\":%d,", lastPlay.type);
     offset += sprintf(buffer + offset, "\"lastPlayedText\":\"%s\"", lastPlayedText);
@@ -706,6 +744,9 @@ const char* game_get_state_json() {
 }
 
 // 抢地主功能（玩家调用）
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 void rob_landlord(int playerIdx) {
     if (landlordRobbed) return;
 
@@ -750,6 +791,9 @@ void update_player_team() {
     }
 }
 // 游戏初始化
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 void game_init() {
     reset_all(true);  // 保留积分
 

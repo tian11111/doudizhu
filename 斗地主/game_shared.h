@@ -27,6 +27,13 @@ typedef enum {
     TEAM_FARMER       // 农民队
 } TeamType;
 
+// AI 难度
+typedef enum {
+    DIFF_EASY = 0,
+    DIFF_NORMAL,
+    DIFF_HARD
+} Difficulty;
+
 // 表示一次出牌行为
 typedef struct {
     PlayType type;
@@ -89,6 +96,7 @@ extern int landlordIndex;
 extern char buffer[4096];
 extern bool landlordRobbed;
 extern Card landlordCards[3];
+extern Difficulty ai_difficulty;
 
 void clearLastPlayedText(void);
 void buildPlayedTextFromSelection(const Player* player, int selected[], int count);
@@ -105,6 +113,7 @@ int game_play(int selected[], int count);
 int game_pass_by_player(int playerIdx);
 int game_pass(void);
 const char* game_get_state_json(void);
+void set_ai_difficulty(int level);
 void game_init(void);
 void game_auto_run(void);
 void rob_landlord(int playerIdx);

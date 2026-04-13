@@ -1,9 +1,47 @@
 #include "ai_logic.h"
 #include "game_shared.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+typedef struct {
+    int singles;
+    int pairs;
+    int triples;
+    int bombs;
+    int highSingles;
+} HandShape;
+
+static HandShape analyze_hand_shape(const Player* player) {
+    HandShape shape = { 0 };
+    int pointCount[15] = { 0 };
+
+    for (int i = 0; i < player->cardCount; i++) {
+        int point = player->hand[i].point;
+        pointCount[point]++;
+    }
+
+    for (int point = 0; point < 15; point++) {
+        if (pointCount[point] == 1) {
+            shape.singles++;
+            if (point >= POINT_A) {
+                shape.highSingles++;
+            }
+        } else if (pointCount[point] == 2) {
+            shape.pairs++;
+        } else if (pointCount[point] == 3) {
+            shape.triples++;
+        } else if (pointCount[point] == 4) {
+            shape.bombs++;
+        }
+    }
+
+    return shape;
+}
 
 // 智能出牌逻辑
 int get_best_play(int playerIdx) {
@@ -29,6 +67,7 @@ int get_best_play(int playerIdx) {
     // --- 小工具：统计手牌信息 ---
     int pointCount[15] = { 0 };
     bool hasSmallJoker = false, hasBigJoker = false;
+    HandShape shape = analyze_hand_shape(player);
     for (int i = 0; i < player->cardCount; i++) {
         int p = player->hand[i].point;
         pointCount[p]++;
@@ -109,6 +148,13 @@ int get_best_play(int playerIdx) {
         if (__isBomb) __score -= 900; \
         if (__isRocket) __score -= 1300; \
         \
+        /* 5.5. 手型结构：尽量减少散牌，保住成型牌 */ \
+        if (shape.singles >= 5 && __play.type != SINGLE) __score += 120; \
+        if (shape.highSingles >= 2 && __play.type == SINGLE && __play.point >= POINT_A) __score -= 160; \
+        if (shape.pairs >= 3 && __play.type == PAIR) __score += 90; \
+        if (shape.triples >= 2 && (__play.type == TRIPLE || __play.type == TRIPLE_ONE || __play.type == TRIPLE_PAIR)) __score += 130; \
+        if (shape.bombs > 0 && __isBomb && selfRemain > 6 && landlordRemain > 2) __score -= 180; \
+        \
         /* 6. 积分策略：分低时更激进，分高时更保守 */ \
         if (player->score < 0) { \
             if (__isBomb) __score += 260; \
@@ -131,11 +177,30 @@ int get_best_play(int playerIdx) {
                 if (__play.type == BOMB) __score += 180; \
                 if (__play.type == ROCKET) __score += 220; \
             } \
+            if (selfRemain <= 5) { \
+                __score += __play.cardCount * 110; \
+                if (__play.type == STRAIGHT || __play.type == DOUBLE_STRAIGHT || __play.type == AIRCRAFT || __play.type == AIRCRAFT_ONE || __play.type == AIRCRAFT_PAIR) __score += 220; \
+                if (__play.type == TRIPLE_ONE || __play.type == TRIPLE_PAIR) __score += 140; \
+                if (__play.point >= POINT_A) __score += 70; \
+                if (__isBomb) __score += 260; \
+                if (__isRocket) __score += 320; \
+            } \
         } else { \
             /* 农民：队友出的牌，能不压就别犯病 */ \
             if (prevIdx != -1 && players[prevIdx].team == myTeam && lastPlay.type != PASS) { \
                 __score -= 1200; \
                 if (players[prevIdx].cardCount <= 2) __score -= 2400; \
+            } \
+            if (mateIdx != -1 && players[mateIdx].cardCount <= 2 && lastPlay.type != PASS) { \
+                if (prevIdx == mateIdx) { \
+                    __score -= 3200; \
+                    if (__isBomb) __score -= 600; \
+                    if (__isRocket) __score -= 900; \
+                } else if (prevIdx == landlordIndex) { \
+                    __score += 850; \
+                    if (__play.type == SINGLE && __play.point <= lastPlay.point + 2) __score += 260; \
+                    if (__play.type == PAIR && __play.point <= lastPlay.point + 1) __score += 220; \
+                } \
             } \
             /* 对地主要更狠一点 */ \
             if (prevIdx == landlordIndex && lastPlay.type != PASS) { \
@@ -158,6 +223,14 @@ int get_best_play(int playerIdx) {
             __score += __play.cardCount * 120; \
             if (__play.type == BOMB) __score += 160; \
             if (__play.type == ROCKET) __score += 200; \
+        } \
+        \
+        /* 10. 难度调节 */ \
+        if (ai_difficulty == DIFF_EASY) { \
+            __score += rand() % 800 - 400; /* 简单模式：增加随机干扰 */ \
+        } else if (ai_difficulty == DIFF_HARD) { \
+            if (__remainAfter <= 5) __score += 300; /* 困难模式：更看重出完牌 */ \
+            if (__isBomb || __isRocket) __score += 200; /* 困难模式：更愿意用炸弹夺回牌权 */ \
         } \
         \
         if (!found || __score > bestScore) { \
@@ -507,6 +580,9 @@ int get_best_play(int playerIdx) {
 }
 
 // AI出牌（优化：调用智能出牌逻辑）
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 int game_ai_step() {
     int i = currentPlayer;
     if (i == 0 || gameOver || !landlordRobbed) return 0;
@@ -550,10 +626,25 @@ int game_ai_step() {
 }
 
 // AI抢地主逻辑
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+#endif
 void ai_rob_landlord(int playerIdx) {
     if (landlordRobbed) return;
 
-    // AI抢地主概率：手牌有炸弹/王炸则80%抢，否则20%
+    // 根据难度调整抢地主概率
+    int robProbHigh = 80; // 有好牌时抢的概率
+    int robProbLow = 20;  // 没好牌时抢的概率
+
+    if (ai_difficulty == DIFF_EASY) {
+        robProbHigh = 40;
+        robProbLow = 5;
+    } else if (ai_difficulty == DIFF_HARD) {
+        robProbHigh = 95;
+        robProbLow = 30;
+    }
+
+    // AI抢地主概率：手牌有炸弹/王炸
     int bombCount = 0;
     bool hasRocket = false;
     int points[20];
@@ -575,10 +666,10 @@ void ai_rob_landlord(int playerIdx) {
 
     // 随机决定是否抢
     int randVal = rand() % 100;
-    if ((bombCount > 0 || hasRocket) && randVal < 80) {
+    if ((bombCount > 0 || hasRocket) && randVal < robProbHigh) {
         rob_landlord(playerIdx);
     }
-    else if (randVal < 20) {
+    else if (randVal < robProbLow) {
         rob_landlord(playerIdx);
     }
     else {
